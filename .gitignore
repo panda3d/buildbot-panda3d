@@ -1,0 +1,8 @@
+*.pyc
+*.pyo
+/users.json
+/slaves.json
+/http.log
+/state.sqlite
+/twistd.log
+/twistd.pid
