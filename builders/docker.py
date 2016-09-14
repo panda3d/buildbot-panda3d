@@ -23,6 +23,7 @@ from buildbot.steps.transfer import FileDownload, FileUpload
 from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.slave import RemoveDirectory
 from buildbot.config import BuilderConfig
+from buildbot.locks import MasterLock
 
 from datetime import date
 import os.path
@@ -170,6 +171,9 @@ build_steps = [
     Compile(command=build_cmd, haltOnFailure=True, env={'PYTHONPATH': python_path}),
 ]
 
+# Define a global lock, since reprepro won't allow simultaneous access to the repo.
+repo_lock = MasterLock('reprepro')
+
 # Steps to publish the runtime and SDK.
 publish_deb_steps = [
     # Upload the deb package.
@@ -183,7 +187,7 @@ publish_deb_steps = [
     # Upload it to an apt repository.
     MasterShellCommand(name="reprepro", command=[
         "reprepro", "-b", deb_archive_dir, "includedeb", deb_archive_suite,
-        deb_upload_filename]),
+        deb_upload_filename], locks=[repo_lock.access('exclusive')]),
 ]
 
 # Now make the factories.
