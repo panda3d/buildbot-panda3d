@@ -32,6 +32,20 @@ def exe_filename(props):
     return "%s-%s%s.exe" % (prefix, props["version"], suffix)
 
 @renderer
+def pdb_filename(props):
+    "Determines the name of an -pdb.zip file for uploading."
+
+    if props["arch"] == "amd64":
+        suffix = "-x64"
+    else:
+        suffix = ""
+
+    if "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
+        suffix = "-py" + props["python-version"] + suffix
+
+    return "Panda3D-%s%s-pdb.zip" % (props["version"], suffix)
+
+@renderer
 def exe_upload_filename(props):
     "Determines the upload location of an .exe file on the master."
 
@@ -54,6 +68,27 @@ def exe_upload_filename(props):
     #    basename = "%s-%s%s.exe" % (prefix, props["commit-description"][1:], suffix)
     else:
         basename = "%s-%spre-%s%s.exe" % (prefix, props["version"], props["got_revision"][:7], suffix)
+
+    return '/'.join((config.downloads_dir, props["got_revision"], basename))
+
+@renderer
+def pdb_upload_filename(props):
+    "Determines the upload location of a -pdb.zip file on the master."
+
+    if props["arch"] == "amd64":
+        suffix = "-x64"
+    else:
+        suffix = ""
+
+    if "python-version" in props and props["python-version"]:
+        suffix = "-py" + props["python-version"] + suffix
+
+    if props["revision"].startswith("v"):
+        basename = "Panda3D-SDK-%s%s-pdb.zip" % (props["version"], suffix)
+    #elif "commit-description" in props:
+    #    basename = "Panda3D-SDK-%s%s-pdb.zip" % (props["commit-description"][1:], suffix)
+    else:
+        basename = "Panda3D-SDK-%spre-%s%s-pdb.zip" % (props["version"], props["got_revision"][:7], suffix)
 
     return '/'.join((config.downloads_dir, props["got_revision"], basename))
 
@@ -122,9 +157,15 @@ publish_exe_steps = [
 ]
 
 # Now make the factories.
-exe_factory = BuildFactory()
+sdk_factory = BuildFactory()
 for step in build_steps + publish_exe_steps:
-    exe_factory.addStep(step)
+    sdk_factory.addStep(step)
+sdk_factory.addStep(FileUpload(slavesrc=pdb_filename, masterdest=pdb_upload_filename,
+                               mode=0o664, haltOnFailure=False),
+
+runtime_factory = BuildFactory()
+for step in build_steps + publish_exe_steps:
+    runtime_factory.addStep(step)
 
 rtdist_factory = BuildFactory()
 rtdist_factory.addStep(RemoveDirectory(dir="built/slave"))
@@ -133,7 +174,13 @@ for step in build_steps + publish_rtdist_steps:
 
 
 def windows_builder(buildtype, arch):
-    factory = rtdist_factory if buildtype == "rtdist" else exe_factory
+    if buildtype == "rtdist":
+        factory = rtdist_factory
+    elif buildtype == "runtime":
+        factory = runtime_factory
+    else:
+        factory = sdk_factory
+
     return BuilderConfig(name='-'.join((buildtype, "windows", arch)),
                          slavenames=config.windows_slaves,
                          factory=factory,
