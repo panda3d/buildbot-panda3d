@@ -10,7 +10,8 @@ from buildbot.steps.slave import RemoveDirectory
 from buildbot.config import BuilderConfig
 
 import config
-from .common import common_flags, buildtype_flag, publish_rtdist_steps, MakeTorrent, SeedTorrent
+from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, publish_rtdist_steps
+from .common import MakeTorrent, SeedTorrent
 
 @renderer
 def dmg_filename(props):
@@ -73,6 +74,42 @@ def python_ver(props):
     else:
         return "python2.7"
 
+@renderer
+def whl_filename32(props):
+    "Determines the name of a .whl file for uploading."
+
+    pyver = python_ver.getRenderingFor(props).lstrip("python")[6:].replace('.', '')
+    abi = props["python-abi"]
+    osxver = props["osxtarget"].replace('.', '_')
+    version = whl_version.getRenderingFor(props)
+    return "panda3d-{0}-cp{1}-{2}-macosx_{3}_i386.whl".format(version, pyver, abi, osxver)
+
+@renderer
+def whl_filename64(props):
+    "Determines the name of a .whl file for uploading."
+
+    pyver = python_ver.getRenderingFor(props).lstrip("python")[6:].replace('.', '')
+    abi = props["python-abi"]
+    osxver = props["osxtarget"].replace('.', '_')
+    version = whl_version.getRenderingFor(props)
+    return "panda3d-{0}-cp{1}-{2}-macosx_{3}_x86_64.whl".format(version, pyver, abi, osxver)
+
+@renderer
+def whl_upload_filename32(props):
+    "Determines the upload location of a .whl file on the master."
+
+    return '/'.join((config.downloads_dir,
+                     props["got_revision"],
+                     whl_filename32.getRenderingFor(props)))
+
+@renderer
+def whl_upload_filename64(props):
+    "Determines the upload location of a .whl file on the master."
+
+    return '/'.join((config.downloads_dir,
+                     props["got_revision"],
+                     whl_filename64.getRenderingFor(props)))
+
 build_cmd = [
     python_ver, "makepanda/makepanda.py",
     "--everything",
@@ -88,7 +125,7 @@ build_steps = [
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        "python", "makepanda/getversion.py", buildtype_flag],
+        python_ver, "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
 
     # Run makepanda - give it enough timeout (1h)
@@ -96,6 +133,33 @@ build_steps = [
         env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
              "MAKEPANDA_SDKS": "/Users/buildbot/sdks",
              "PYTHONPATH": python_path}, haltOnFailure=True),
+]
+
+build_publish_whl_steps = whl_version_steps + [
+    SetPropertyFromCommand("python-abi", command=[
+        python_ver, "-c", "import makewheel;print(makewheel.get_abi_tag())"],
+        workdir="build/makepanda", haltOnFailure=True),
+
+    # Build two wheels: one for 32-bit, the other for 64-bit.
+    # makewheel is clever enough to use "lipo" to extract the right arch.
+    ShellCommand(name="makewheel", command=[
+        python_ver, "makepanda/makewheel.py",
+        "--outputdir", "built",
+        "--version", whl_version,
+        "--platform", Interpolate("macosx-%(prop:osxtarget)s-i386"),
+        "--verbose"], haltOnFailure=True),
+
+    ShellCommand(name="makewheel", command=[
+        python_ver, "makepanda/makewheel.py",
+        "--outputdir", "built",
+        "--version", whl_version,
+        "--platform", Interpolate("macosx-%(prop:osxtarget)s-x86_64"),
+        "--verbose"], haltOnFailure=True),
+
+    FileUpload(slavesrc=whl_filename32, masterdest=whl_upload_filename32,
+               mode=0o664, haltOnFailure=True),
+    FileUpload(slavesrc=whl_filename64, masterdest=whl_upload_filename64,
+               mode=0o664, haltOnFailure=True),
 ]
 
 publish_dmg_steps = [
@@ -107,9 +171,13 @@ publish_dmg_steps = [
 ]
 
 # Now make the factories.
-dmg_factory = BuildFactory()
+sdk_factory = BuildFactory()
+for step in build_steps + build_publish_whl_steps + publish_dmg_steps:
+    sdk_factory.addStep(step)
+
+runtime_factory = BuildFactory()
 for step in build_steps + publish_dmg_steps:
-    dmg_factory.addStep(step)
+    runtime_factory.addStep(step)
 
 rtdist_factory = BuildFactory()
 rtdist_factory.addStep(RemoveDirectory(dir="built/slave"))
@@ -122,7 +190,14 @@ def macosx_builder(buildtype, osxver):
         name = '-'.join((buildtype, "macosx" + osxver))
     else:
         name = '-'.join((buildtype, "macosx"))
-    factory = rtdist_factory if buildtype == "rtdist" else dmg_factory
+
+    if buildtype == "rtdist":
+        factory = rtdist_factory
+    elif buildtype == "runtime":
+        factory = runtime_factory
+    else:
+        factory = sdk_factory
+
     return BuilderConfig(name=name,
                          slavenames=config.macosx_slaves,
                          factory=factory,

@@ -1,16 +1,16 @@
 __all__ = ["windows_builder"]
 
-from buildbot.process.properties import Interpolate, Property, renderer
+from buildbot.process.properties import Property, renderer
 from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
-from buildbot.steps.shell import Compile, SetPropertyFromCommand, ShellCommand
+from buildbot.steps.shell import Compile, SetPropertyFromCommand
 from buildbot.steps.transfer import FileUpload
-from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.slave import RemoveDirectory
 from buildbot.config import BuilderConfig
 
 import config
-from .common import common_flags, buildtype_flag, publish_rtdist_steps, MakeTorrent, SeedTorrent
+from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, whl_filename, whl_upload_filename, publish_rtdist_steps
+from .common import MakeTorrent, SeedTorrent
 
 @renderer
 def exe_filename(props):
@@ -112,8 +112,10 @@ def python_executable(props):
 def dist_flags(props):
     if "buildtype" in props and props["buildtype"] == "rtdist":
         return []
-    else:
+    elif "buildtype" in props and props["buildtype"] == "runtime":
         return ["--installer", "--lzma"]
+    else:
+        return ["--installer", "--lzma", "--wheel"]
 
 @renderer
 def outputdir(props):
@@ -131,21 +133,29 @@ build_cmd = [
     common_flags, dist_flags,
     "--outputdir", outputdir,
     "--arch", Property("arch"),
-    "--version", Property("version"),
+    "--version", whl_version,
 ]
 
-build_steps = [
+checkout_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        python_executable, "makepanda\\getversion.py", buildtype_flag],
+        python_executable, "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
+]
 
+whl_steps = [
+    SetPropertyFromCommand("python-abi", command=[
+        python_executable, "-c", "import makewheel;print(makewheel.get_abi_tag())"],
+        workdir="build/makepanda", haltOnFailure=True),
+] + whl_version_steps
+
+build_steps = [
     # Run makepanda - give it enough timeout (6h) since some steps take ages
     Compile(command=build_cmd, timeout=6*60*60,
-        env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
-             "MAKEPANDA_SDKS": "C:\\sdks"}, haltOnFailure=True),
+           env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
+                "MAKEPANDA_SDKS": "C:\\sdks"}, haltOnFailure=True),
 ]
 
 publish_exe_steps = [
@@ -156,20 +166,28 @@ publish_exe_steps = [
     SeedTorrent(exe_upload_filename),
 ]
 
+publish_sdk_steps = [
+    # Upload the wheel.
+    FileUpload(slavesrc=whl_filename, masterdest=whl_upload_filename,
+               mode=0o664, haltOnFailure=True),
+
+    # Upload the pdb zip file.
+    FileUpload(slavesrc=pdb_filename, masterdest=pdb_upload_filename,
+               mode=0o664, haltOnFailure=False),
+] + publish_exe_steps
+
 # Now make the factories.
 sdk_factory = BuildFactory()
-for step in build_steps + publish_exe_steps:
+for step in checkout_steps + whl_steps + build_steps + publish_sdk_steps:
     sdk_factory.addStep(step)
-sdk_factory.addStep(FileUpload(slavesrc=pdb_filename, masterdest=pdb_upload_filename,
-                               mode=0o664, haltOnFailure=False),
 
 runtime_factory = BuildFactory()
-for step in build_steps + publish_exe_steps:
+for step in checkout_steps + build_steps + publish_exe_steps:
     runtime_factory.addStep(step)
 
 rtdist_factory = BuildFactory()
 rtdist_factory.addStep(RemoveDirectory(dir="built/slave"))
-for step in build_steps + publish_rtdist_steps:
+for step in checkout_steps + build_steps + publish_rtdist_steps:
     rtdist_factory.addStep(step)
 
 
@@ -181,7 +199,12 @@ def windows_builder(buildtype, arch):
     else:
         factory = sdk_factory
 
+    if arch == "amd64":
+        platform = "win_amd64"
+    else:
+        platform = "win32"
+
     return BuilderConfig(name='-'.join((buildtype, "windows", arch)),
                          slavenames=config.windows_slaves,
                          factory=factory,
-                         properties={"buildtype": buildtype, "arch": arch})
+                         properties={"buildtype": buildtype, "arch": arch, "platform": platform})

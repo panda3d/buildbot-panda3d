@@ -1,0 +1,21 @@
+FROM quay.io/pypa/manylinux1_x86_64
+
+# Install more recent yasm for ffmpeg compilation
+RUN wget http://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el5/en/x86_64/rpmforge/RPMS/yasm-1.1.0-1.el5.rf.x86_64.rpm && \
+    yum -y --nogpgcheck install yasm-1.1.0-1.el5.rf.x86_64.rpm
+
+# Packages
+RUN yum -y install alsa-lib-devel
+
+# libpulse headers
+RUN wget --no-check-certificate https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.tar.gz && \
+    tar -xzf pulseaudio-9.0.tar.gz && \
+    mkdir /usr/local/include/pulse/ && \
+    cp -r pulseaudio-9.0/src/pulse/*.h /usr/local/include/pulse/ && \
+    touch /usr/lib64/libpulse.so
+
+# Build thirdparty libraries
+ENV MAKEPANDA_THIRDPARTY /root/thirdparty
+ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
+RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
+RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake28 .. && make

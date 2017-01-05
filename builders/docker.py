@@ -201,4 +201,3 @@ def docker_builder(buildtype, distro, suite, arch):
                          slavenames=config.linux_slaves,
                          factory=deb_factory,
                          properties={"buildtype": buildtype, "distro": distro, "suite": suite, "arch": arch})
-
