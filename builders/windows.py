@@ -54,7 +54,7 @@ def exe_upload_filename(props):
     else:
         suffix = ""
 
-    if "python-version" in props and props["python-version"]:
+    if "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
         suffix = "-py" + props["python-version"] + suffix
 
     if "buildtype" in props and props["buildtype"] == "runtime":
@@ -80,7 +80,7 @@ def pdb_upload_filename(props):
     else:
         suffix = ""
 
-    if "python-version" in props and props["python-version"]:
+    if "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
         suffix = "-py" + props["python-version"] + suffix
 
     if props["revision"].startswith("v"):
@@ -103,7 +103,7 @@ def python_executable(props):
 
     if "buildtype" in props and props["buildtype"] == "rtdist":
         return 'C:\\Python27%s\\python.exe' % (suffix)
-    elif "python-version" in props:
+    elif "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
         return 'C:\\thirdparty\\win-python%s%s\\python.exe' % (props["python-version"], suffix)
     else:
         return 'C:\\thirdparty\\win-python%s\\python.exe' % (suffix)
