@@ -78,7 +78,7 @@ def python_ver(props):
 def whl_filename32(props):
     "Determines the name of a .whl file for uploading."
 
-    pyver = python_ver.getRenderingFor(props).lstrip("python")[6:].replace('.', '')
+    pyver = python_ver.getRenderingFor(props)[6:].replace('.', '')
     abi = props["python-abi"]
     osxver = props["osxtarget"].replace('.', '_')
     version = whl_version.getRenderingFor(props)
@@ -88,7 +88,7 @@ def whl_filename32(props):
 def whl_filename64(props):
     "Determines the name of a .whl file for uploading."
 
-    pyver = python_ver.getRenderingFor(props).lstrip("python")[6:].replace('.', '')
+    pyver = python_ver.getRenderingFor(props)[6:].replace('.', '')
     abi = props["python-abi"]
     osxver = props["osxtarget"].replace('.', '_')
     version = whl_version.getRenderingFor(props)
