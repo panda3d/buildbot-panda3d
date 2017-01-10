@@ -20,7 +20,10 @@ def dmg_filename(props):
     if "buildtype" in props and props["buildtype"] == "runtime":
         return "p3d-setup.dmg"
 
-    return "Panda3D-%s.dmg" % (props["version"])
+    if "python-version" in props and props["python-version"] and not props["python-version"].startswith("2."):
+        return "Panda3D-%s-py%s.dmg" % (props["version"], props["python-version"])
+    else:
+        return "Panda3D-%s.dmg" % (props["version"])
 
 @renderer
 def dmg_upload_filename(props):
@@ -34,10 +37,14 @@ def dmg_upload_filename(props):
         suffix = "-MacOSX" + props["osxtarget"]
 
     if props["revision"].startswith("v"):
-        basename = "%s-%s%s.dmg" % (prefix, props["version"], suffix)
+        basename = "%s-%s%s" % (prefix, props["version"], suffix)
     else:
-        basename = "%s-%s-%s%s.dmg" % (prefix, props["version"], props["got_revision"][:7], suffix)
+        basename = "%s-%s-%s%s" % (prefix, props["version"], props["got_revision"][:7], suffix)
 
+    if "python-version" in props and props["python-version"] and not props["python-version"].startswith("2."):
+        basename += "-py%s.dmg" % (props["python-version"])
+
+    basename += ".dmg"
     return '/'.join((config.downloads_dir, props["got_revision"], basename))
 
 @renderer
