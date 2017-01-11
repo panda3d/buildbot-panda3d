@@ -42,7 +42,7 @@ def dmg_upload_filename(props):
         basename = "%s-%s-%s%s" % (prefix, props["version"], props["got_revision"][:7], suffix)
 
     if "python-version" in props and props["python-version"] and not props["python-version"].startswith("2."):
-        basename += "-py%s.dmg" % (props["python-version"])
+        basename += "-py%s" % (props["python-version"])
 
     basename += ".dmg"
     return '/'.join((config.downloads_dir, props["got_revision"], basename))
