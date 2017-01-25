@@ -22,6 +22,13 @@ def python_incdir(props):
     return "/opt/python/%s/include" % (abi)
 
 @renderer
+def python_libdir(props):
+    "Returns the path to the Python library directory."
+
+    abi = python_abi.getRenderingFor(props)
+    return "/opt/python/%s/lib" % (abi)
+
+@renderer
 def python_executable(props):
     "Returns the path to the Python executable."
 
@@ -57,6 +64,7 @@ build_cmd = [
     "--everything", "--no-directscripts",
     "--no-gles", "--no-gles2", "--no-egl",
     "--python-incdir", python_incdir,
+    "--python-libdir", python_libdir,
     common_flags,
     "--outputdir", "built",
     "--wheel", "--version", whl_version,
@@ -76,6 +84,10 @@ build_steps = [
     # Download the Dockerfile for this distribution.
     FileDownload(mastersrc=Interpolate("dockerfiles/manylinux1-%(prop:arch)s"),
                  slavedest="Dockerfile", workdir="context"),
+
+    # And the build scripts.
+    FileDownload(mastersrc="build_scripts/build.sh", slavedest="build_scripts/build.sh", workdir="context"),
+    FileDownload(mastersrc="build_scripts/build_utils.sh", slavedest="build_scripts/build_utils.sh", workdir="context"),
 
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="context", haltOnFailure=True),
