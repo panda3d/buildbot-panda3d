@@ -31,7 +31,7 @@ runtime_dir = "/var/www/html/runtime-dev.panda3d.org"
 pmerge_bin = "/var/www/html/runtime.panda3d.org/pmerge.p3d"
 
 # List of slave names for each platform.
-linux_slaves = ["build1"]
+linux_slaves = ["build-lnx"]
 windows_slaves = ["build-win"]
 macosx_slaves = ["build-osx"]
 
