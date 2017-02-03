@@ -36,6 +36,13 @@ def python_executable(props):
     return "/opt/python/%s/bin/python" % (abi)
 
 @renderer
+def built_dir(props):
+    "Returns the name of the build directory to use."
+
+    abi = python_abi.getRenderingFor(props)
+    return "built-" + abi
+
+@renderer
 def setarch(props):
     "Returns the appropriate setarch command if needed."
 
@@ -66,7 +73,7 @@ build_cmd = [
     "--python-incdir", python_incdir,
     "--python-libdir", python_libdir,
     common_flags,
-    "--outputdir", "built",
+    "--outputdir", built_dir,
     "--wheel", "--version", whl_version,
 ]
 
