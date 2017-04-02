@@ -114,6 +114,13 @@ def dist_flags(props):
         return []
     elif "buildtype" in props and props["buildtype"] == "runtime":
         return ["--installer", "--lzma"]
+
+    pythonv = (2, 7)
+    if "python-version" in props and props["python-version"]:
+        pythonv = tuple(map(int, props["python-version"].split('.')))
+
+    if pythonv >= (3, 5):
+        return ["--installer", "--lzma", "--msvc-version=14", "--wheel"]
     else:
         return ["--installer", "--lzma", "--wheel"]
 
