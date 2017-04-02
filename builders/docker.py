@@ -29,21 +29,41 @@ from datetime import date
 import os.path
 
 import config
-from .common import common_flags, buildtype_flag, publish_rtdist_steps, MakeTorrent, SeedTorrent
+from .common import common_flags, buildtype_flag, whl_version_steps, publish_rtdist_steps, MakeTorrent, SeedTorrent
 
 @renderer
 def upstream_version(props):
     "Determine which version string a .deb package should have."
 
-    if props["revision"].startswith("v"):
+    if props["revision"] == "v" + props["version"]:
+        # We requested building a particular version tag, so this must be a
+        # release.
         return props["version"]
-    #elif "commit-description" in props:
-    #    return props["commit-description"][1:]
-    else:
-        #TODO: detect whether this is a pre-release or post-release build.
-        datestamp = date.today().strftime("%Y%m%d")
-        #return "%s~%s-g%s" % (props["version"], datestamp, props["got_revision"][:7])
-        return "%s~%s-g%s" % (props["version"], datestamp, props["got_revision"][:7])
+
+    version = tuple(map(int, props["version"].split('.')))
+
+    # Was this commit branched off from the main branch?
+    local = ""
+    if props["merge-base"] != props["got_revision"] and not props["branch"].startswith("release/"):
+        # Add a local tag indicating that this has unofficial changes.
+        local += "+g" + props["got_revision"][:7]
+
+    # Is this a post-release build?  Check using the output of "git describe",
+    # which contains the last release tag plus the number of commits since it.
+    if "commit-description" in props:
+        desc = props["commit-description"].split('-')
+
+        if desc[0] == "v{0}.{1}.{2}".format(*version):
+            if len(desc) == 1:
+                # This is exactly this release.
+                return props["version"]
+            else:
+                # This is a post-release.
+                return "{0}+post{1}{2}".format(props["version"], desc[1], local)
+
+    # No, it's a pre-release.  Make a version tag based on the number of
+    # commits since the last major release.
+    return "{0}~dev{1}{2}".format(props["version"], props["commit-index"], local)
 
 @renderer
 def debian_version(props):
@@ -157,6 +177,9 @@ build_steps = [
     SetPropertyFromCommand("version", command=[
         "python", "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
+
+    # These steps fill in properties used to determine upstream_version.
+    ] + whl_version_steps + [
 
     # Download the Dockerfile for this distribution.
     FileDownload(mastersrc=Interpolate("dockerfiles/%(prop:suite)s-%(prop:arch)s"), slavedest="Dockerfile", workdir="context"),

@@ -88,7 +88,7 @@ def whl_version(props):
         # release.
         return props["version"]
 
-    version = map(int, props["version"].split('.'))
+    version = tuple(map(int, props["version"].split('.')))
 
     # Was this commit branched off from the main branch?
     local = ""
