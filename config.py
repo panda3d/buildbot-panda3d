@@ -30,6 +30,42 @@ runtime_dir = "/var/www/html/runtime-dev.panda3d.org"
 # Location of a copy of pmerge that can be run on the master.
 pmerge_bin = "/var/www/html/runtime.panda3d.org/pmerge.p3d"
 
+# Files that, when changed, should not trigger an automatic SDK rebuild.
+# Paths starting with a forward slash are relative to the filesystem root.
+sdk_excludes = [
+    ".gitignore",
+    "/.travis.yml",
+    "/LICENSE",
+    "README",
+    "README.*",
+    "*.pl",
+    "*.vcproj",
+    "*.sln",
+    "*.pdef",
+    "*.xcf",
+    "*.tau",
+    "*.sh",
+    "*.prebuilt",
+    "*.bat",
+    "PACKAGE-DESC",
+    "/doc/ReleaseNotes",
+    "/doc/InstallerNotes",
+    "/doc/INSTALL",
+    "/doc/INSTALLING-PLUGINS.TXT",
+    "/direct/src/plugin/*",
+    "/direct/src/plugin_activex/*",
+    "/direct/src/plugin_installer/*",
+    "/direct/src/plugin_npapi/*",
+    "/direct/src/plugin_standalone/*",
+    "/direct/src/doc/*",
+    "/panda/src/cftalk/*",
+    "/panda/src/doc/*",
+    "/panda/src/android/*",
+    "/panda/src/androiddisplay/*",
+    "/panda/src/awesomium/*",
+    "/panda/src/skel/*",
+]
+
 # List of slave names for each platform.
 linux_slaves = ["build-lnx"]
 windows_slaves = ["build-win"]
@@ -49,3 +85,29 @@ for slave_spec in json.load(open(slaves_fn, 'r')):
 users = []
 for user_spec in json.load(open(users_fn, 'r')):
     users.append((str(user_spec[0]), str(user_spec[1])))
+
+
+from fnmatch import fnmatchcase
+
+def _matches(file, pattern):
+    file = file.lstrip('/')
+    if pattern.startswith('/'):
+        return fnmatchcase(file, pattern[1:])
+
+    # Relative pattern.  Recurse through the hierarchy to see if it matches.
+    while file:
+        if fnmatchcase(file, pattern):
+            return True
+        file = file.partition('/')[2]
+
+    return False
+
+def is_important(change):
+    if '[ci skip]' in change.comments or '[skip ci]' in change.comments:
+        return False
+
+    for file in change.files:
+        if not any(_matches(file, pattern) for pattern in sdk_excludes):
+            return True
+
+    return False
