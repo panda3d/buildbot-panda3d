@@ -31,7 +31,7 @@ RUN wget --no-check-certificate https://freedesktop.org/software/pulseaudio/rele
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake28 .. && linux32 make
+RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake28 .. && linux32 make VERBOSE=1
 
 # Run 32-bit uname selection on way into image
 ENTRYPOINT ["linux32"]
