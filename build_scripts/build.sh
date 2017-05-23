@@ -5,7 +5,7 @@
 set -ex
 
 # Python versions to be installed in /opt/$VERSION_NO
-CPYTHON_VERSIONS="2.6.9 2.7.13 3.4.6 3.5.3 3.6.0"
+CPYTHON_VERSIONS="2.6.9 2.7.13 3.4.6 3.5.3 3.6.1"
 
 # openssl version to build, with expected sha256 hash of .tar.gz
 # archive
@@ -13,11 +13,13 @@ OPENSSL_ROOT=openssl-1.0.2k
 OPENSSL_HASH=6b3977c61f2aedf0f96367dcfb5c6e578cf37e7b8d913b4ecb6643c3cb88d8c0
 EPEL_RPM_HASH=0dcc89f9bf67a2a515bad64569b7a9615edc5e018f676a578d5fd0f17d3c81d4
 DEVTOOLS_HASH=a8ebeb4bed624700f727179e6ef771dafe47651131a00a78b342251415646acc
-PATCHELF_HASH=d9afdff4baeacfbc64861454f368b7f2c15c44d245293f7587bbf726bfe722fb
+PATCHELF_VERSION=6bfcafbba8d89e44f9ac9582493b4f27d9d8c369
 CURL_ROOT=curl-7.49.1
 CURL_HASH=eb63cec4bef692eab9db459033f409533e6d10e20942f4b060b32819e81885f1
 AUTOCONF_ROOT=autoconf-2.69
 AUTOCONF_HASH=954bd69b391edc12d6a4a51a2dd1476543da5c6bbf05a95b59dc0dd6fd4c2969
+AUTOMAKE_ROOT=automake-1.15
+AUTOMAKE_HASH=7946e945a96e28152ba5a6beb0625ca715c6e32ac55f2e353ef54def0c8ed924
 
 # Dependencies for compiling Python that we want to remove from
 # the final image after compiling Python
@@ -26,13 +28,22 @@ PYTHON_COMPILE_DEPS="zlib-devel bzip2-devel ncurses-devel sqlite-devel readline-
 # Libraries that are allowed as part of the manylinux1 profile
 MANYLINUX1_DEPS="glibc-devel libstdc++-devel glib2-devel libX11-devel libXext-devel libXrender-devel  mesa-libGL-devel libICE-devel libSM-devel ncurses-devel"
 
+# Centos 5 is EOL and is no longer available from the usual mirrors, so switch
+# to http://vault.centos.org
+# From: https://github.com/rust-lang/rust/pull/41045
+# The location for version 5 was also removed, so now only the specific release
+# (5.11) can be referenced.
+sed -i 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
+sed -i 's/mirrorlist/#mirrorlist/' /etc/yum.repos.d/*.repo
+sed -i 's/#\(baseurl.*\)mirror.centos.org\/centos\/$releasever/\1vault.centos.org\/5.11/' /etc/yum.repos.d/*.repo
+
 # Get build utilities
 MY_DIR=$(dirname "${BASH_SOURCE[0]}")
 source $MY_DIR/build_utils.sh
 
 # EPEL support
 yum -y install wget curl
-curl -sLO https://dl.fedoraproject.org/pub/epel/5/x86_64/epel-release-5-4.noarch.rpm
+curl -sLO https://github.com/pypa/manylinux/raw/e59ee3d472a792ee489ff9254c6859a63734eb7b/docker/build_scripts/epel-release-5-4.noarch.rpm
 check_sha256sum epel-release-5-4.noarch.rpm $EPEL_RPM_HASH
 
 # Dev toolset (for LLVM and other projects requiring C++11 support)
@@ -53,6 +64,19 @@ yum -y install bzip2 make git patch unzip bison yasm diffutils \
 # Install newest autoconf
 build_autoconf $AUTOCONF_ROOT $AUTOCONF_HASH
 autoconf --version
+
+# Install newest automake
+build_automake $AUTOMAKE_ROOT $AUTOMAKE_HASH
+automake --version
+
+# Install a more recent SQLite3
+curl -sO https://sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
+tar xfz sqlite-autoconf-3160200.tar.gz
+cd sqlite-autoconf-3160200
+./configure
+make install
+cd ..
+rm -rf sqlite-autoconf-3160200*
 
 # Compile the latest Python releases.
 # (In order to have a proper SSL module, Python is compiled
@@ -86,11 +110,10 @@ curl-config --features
 rm -rf /usr/local/ssl
 
 # Install patchelf (latest with unreleased bug fixes)
-curl -sLO https://nipy.bic.berkeley.edu/manylinux/patchelf-0.9njs2.tar.gz
-check_sha256sum patchelf-0.9njs2.tar.gz $PATCHELF_HASH
-tar -xzf patchelf-0.9njs2.tar.gz
-(cd patchelf-0.9njs2 && ./configure && make && make install)
-rm -rf patchelf-0.9njs2.tar.gz patchelf-0.9njs2
+curl -sL -o patchelf.tar.gz https://github.com/NixOS/patchelf/archive/$PATCHELF_VERSION.tar.gz
+tar -xzf patchelf.tar.gz
+(cd patchelf-$PATCHELF_VERSION && ./bootstrap.sh && ./configure && make && make install)
+rm -rf patchelf.tar.gz patchelf-$PATCHELF_VERSION
 
 # Install latest pypi release of auditwheel
 $PY36_BIN/pip install auditwheel
