@@ -117,10 +117,18 @@ def whl_upload_filename64(props):
                      props["got_revision"],
                      whl_filename64.getRenderingFor(props)))
 
+@renderer
+def outputdir(props):
+    if "buildtype" not in props or props["buildtype"] != "runtime":
+        pyver = python_ver.getRenderingFor(props)[6:]
+        return ['built-py' + pyver]
+    else:
+        return ['built']
+
 build_cmd = [
     python_ver, "makepanda/makepanda.py",
     "--everything",
-    "--outputdir", "built",
+    "--outputdir", outputdir,
     common_flags, arch_flags, dist_flags,
     "--osxtarget", Property("osxtarget"),
     "--no-gles", "--no-gles2", "--no-egl",
