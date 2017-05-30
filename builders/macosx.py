@@ -159,14 +159,14 @@ build_publish_whl_steps = whl_version_steps + [
     # makewheel is clever enough to use "lipo" to extract the right arch.
     ShellCommand(name="makewheel", command=[
         python_ver, "makepanda/makewheel.py",
-        "--outputdir", "built",
+        "--outputdir", outputdir,
         "--version", whl_version,
         "--platform", Interpolate("macosx-%(prop:osxtarget)s-i386"),
         "--verbose"], haltOnFailure=True),
 
     ShellCommand(name="makewheel", command=[
         python_ver, "makepanda/makewheel.py",
-        "--outputdir", "built",
+        "--outputdir", outputdir,
         "--version", whl_version,
         "--platform", Interpolate("macosx-%(prop:osxtarget)s-x86_64"),
         "--verbose"], haltOnFailure=True),
