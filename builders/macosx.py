@@ -76,10 +76,17 @@ def python_ver(props):
         return "python" + props["python-version"]
     elif "buildtype" in props and props["buildtype"] == "rtdist":
         return "python2.7"
-    elif "osxtarget" in props and props["osxtarget"] == "10.6":
-        return "python2.6"
+    #elif "osxtarget" in props and props["osxtarget"] == "10.6":
+    #    return "python2.6"
     else:
         return "python2.7"
+
+@renderer
+def python_executable(props):
+    "Returns the path to the Python executable."
+
+    # We always use the build from python.org at the moment.
+    return '/usr/local/bin/' + python_ver.getRenderingFor(props)
 
 @renderer
 def whl_filename32(props):
@@ -126,7 +133,7 @@ def outputdir(props):
         return ['built']
 
 build_cmd = [
-    python_ver, "makepanda/makepanda.py",
+    python_executable, "makepanda/makepanda.py",
     "--everything",
     "--outputdir", outputdir,
     common_flags, arch_flags, dist_flags,
@@ -140,7 +147,7 @@ build_steps = [
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        python_ver, "makepanda/getversion.py", buildtype_flag],
+        python_executable, "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
 
     # Run makepanda - give it enough timeout (1h)
@@ -152,20 +159,20 @@ build_steps = [
 
 build_publish_whl_steps = whl_version_steps + [
     SetPropertyFromCommand("python-abi", command=[
-        python_ver, "-c", "import makewheel;print(makewheel.get_abi_tag())"],
+        python_executable, "-c", "import makewheel;print(makewheel.get_abi_tag())"],
         workdir="build/makepanda", haltOnFailure=True),
 
     # Build two wheels: one for 32-bit, the other for 64-bit.
     # makewheel is clever enough to use "lipo" to extract the right arch.
     ShellCommand(name="makewheel", command=[
-        python_ver, "makepanda/makewheel.py",
+        python_executable, "makepanda/makewheel.py",
         "--outputdir", outputdir,
         "--version", whl_version,
         "--platform", Interpolate("macosx-%(prop:osxtarget)s-i386"),
         "--verbose"], haltOnFailure=True),
 
     ShellCommand(name="makewheel", command=[
-        python_ver, "makepanda/makewheel.py",
+        python_executable, "makepanda/makewheel.py",
         "--outputdir", outputdir,
         "--version", whl_version,
         "--platform", Interpolate("macosx-%(prop:osxtarget)s-x86_64"),
@@ -195,7 +202,7 @@ for step in build_steps + publish_dmg_steps:
     runtime_factory.addStep(step)
 
 rtdist_factory = BuildFactory()
-rtdist_factory.addStep(RemoveDirectory(dir="built/slave"))
+#rtdist_factory.addStep(RemoveDirectory(dir="built/stage"))
 for step in build_steps + publish_rtdist_steps:
     rtdist_factory.addStep(step)
 
