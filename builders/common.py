@@ -9,11 +9,15 @@ from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.transfer import DirectoryUpload
 from buildbot.process.properties import Interpolate, Property, renderer
 from buildbot.locks import MasterLock
+import re
 
 import config
 
 # Define a lock so that only one builder can update the rtdist at a time.
 rtdist_lock = MasterLock('rtdist')
+
+# Which letters are invalid in a local tag, as per PEP 440.
+local_tag_invalid = re.compile('[^a-zA-Z0-9.]')
 
 @renderer
 def sse2_flag(props):
@@ -53,7 +57,7 @@ def buildtype_flag(props):
 
 @renderer
 def refspec(props):
-    "The base tag from which to count revision number."
+    "Used for counting the number of commits on the master branch."
 
     # Needs to be fixed if we ever request building 2.0.0, probably by picking
     # the point at which 2.0 branched off.
@@ -75,6 +79,16 @@ def refspec(props):
 
     return "v{0}.{1}.{2}..{3}".format(version[0], version[1], version[2], base)
 
+def is_branched(step):
+    "Returns true if we are not on the master or on a release branch."
+
+    branch = step.getProperty("branch")
+    if branch and branch.startswith("release/"):
+        return False
+    else:
+        merge_base = step.getProperty("merge-base")
+        return merge_base != step.getProperty("got_revision")
+
 @renderer
 def whl_version(props):
     "Determine which PEP 440 version string a .whl package should have."
@@ -94,7 +108,15 @@ def whl_version(props):
     local = ""
     if props["merge-base"] != props["got_revision"] and not props["branch"].startswith("release/"):
         # Add a local tag indicating that this has unofficial changes.
-        local += "+g" + props["got_revision"][:7]
+        if props["branch"] and "divergence" in props and props["divergence"]:
+            # Strip disallowed characters from the local tag, as per PEP 440.
+            branch = props["branch"].replace('/', '.')
+            local += "+" + local_tag_invalid.sub('', branch)
+            local += "." + props["divergence"]
+        else:
+            # If we can't identify the branch we're on, add the commit ID.
+            branch = props["got_revision"][:7]
+            local += "+g" + props["got_revision"][:7]
 
     # Is this a post-release build?  Check using the output of "git describe",
     # which contains the last release tag plus the number of commits since it.
@@ -211,6 +233,11 @@ whl_version_steps = [
     SetPropertyFromCommand("commit-index", command=[
         "git", "rev-list", "--count", refspec],
         haltOnFailure=True),
+
+    # Count the number of commits on the current branch.
+    SetPropertyFromCommand("divergence", command=[
+        "git", "rev-list", "--count", Interpolate("%(prop:merge-base)s..%(prop:got_revision)s")],
+        haltOnFailure=True, doStepIf=is_branched),
 ]
 
 # Steps to publish the rtdist.
