@@ -28,7 +28,8 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu artful-security main universe mul
 RUN echo "deb http://archive.ubuntu.com/ubuntu artful-updates main universe multiverse" >> /etc/apt/sources.list
 RUN echo "deb http://ppa.launchpad.net/panda3d/ppa/ubuntu artful main" >> /etc/apt/sources.list
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BCD3D563A258828C
+RUN apt-get -y --force-yes --no-install-recommends install dirmngr && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BCD3D563A258828C
 
 RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
     pkg-config bison flex build-essential fakeroot python-dev \
