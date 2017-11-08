@@ -3,6 +3,16 @@
 /users.json
 /slaves.json
 /http.log
+/http.log.*
 /state.sqlite
 /twistd.log
+/twistd.log.*
 /twistd.pid
+/*-amd64/
+/*-x86_64/
+/*-i386/
+/*-i686/
+/runtime-macos*/
+/sdk-macos*/
+/rtdist-macos*/
+/master.cfg.sample
