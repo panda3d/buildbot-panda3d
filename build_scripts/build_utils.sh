@@ -9,8 +9,6 @@ OPENSSL_DOWNLOAD_URL=ftp://ftp.openssl.org/source
 # Ditto the curl sources
 CURL_DOWNLOAD_URL=http://curl.askapache.com/download
 
-GET_PIP_URL=https://bootstrap.pypa.io/get-pip.py
-
 AUTOCONF_DOWNLOAD_URL=http://ftp.gnu.org/gnu/autoconf
 AUTOMAKE_DOWNLOAD_URL=http://ftp.gnu.org/gnu/automake
 
@@ -59,7 +57,7 @@ function do_cpython_build {
     if [ -e ${prefix}/bin/python3 ]; then
         ln -s python3 ${prefix}/bin/python
     fi
-    ${prefix}/bin/python get-pip.py
+    ${prefix}/bin/python /build_scripts/get-pip.py
     if [ -e ${prefix}/bin/pip3 ] && [ ! -e ${prefix}/bin/pip ]; then
         ln -s pip3 ${prefix}/bin/pip
     fi
@@ -85,12 +83,9 @@ function build_cpython {
 
 
 function build_cpythons {
-    check_var $GET_PIP_URL
-    curl -sLO $GET_PIP_URL
     for py_ver in $@; do
         build_cpython $py_ver
     done
-    rm -f get-pip.py
 }
 
 

@@ -95,6 +95,7 @@ build_steps = [
     # And the build scripts.
     FileDownload(mastersrc="build_scripts/build.sh", slavedest="build_scripts/build.sh", workdir="context"),
     FileDownload(mastersrc="build_scripts/build_utils.sh", slavedest="build_scripts/build_utils.sh", workdir="context"),
+    FileDownload(mastersrc="build_scripts/get-pip.py", slavedest="build_scripts/get-pip.py", workdir="context"),
 
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="context", haltOnFailure=True),
