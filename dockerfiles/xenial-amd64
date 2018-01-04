@@ -38,10 +38,10 @@ RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
     libswscale-dev libfreetype6-dev libgtk2.0-dev libeigen3-dev \
     libsquish-dev libfcollada-dev libvrpn-dev libquat-dev \
     libassimp-dev libbullet-dev libopenexr-dev libopusfile-dev \
-    cmake unzip git
+    cmake unzip git ca-certificates
 
 # Build thirdparty libraries
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake -DBUILD_ALL=OFF -DBUILD_ODE=ON -DBUILD_ARTOOLKIT=ON .. && make VERBOSE=1
+RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake -DDISABLE_ALL=ON -DBUILD_ODE=ON -DBUILD_ARTOOLKIT=ON .. && make VERBOSE=1
