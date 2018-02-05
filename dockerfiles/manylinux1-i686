@@ -1,11 +1,17 @@
 FROM phusion/centos-5-32
 
-ENV LC_ALL en_US.UTF-8
-ENV LANG en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV PATH /opt/rh/devtoolset-2/root/usr/bin:$PATH
-ENV LD_LIBRARY_PATH /opt/rh/devtoolset-2/root/usr/lib:/usr/local/lib
-ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig
+ENV LD_LIBRARY_PATH /opt/rh/devtoolset-2/root/usr/lib64:/opt/rh/devtoolset-2/root/usr/lib:/usr/local/lib64:/usr/local/lib
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+
+# Build Python
+COPY build_scripts /build_scripts
+RUN linux32 bash build_scripts/build.sh && rm -r build_scripts
+
+ENV SSL_CERT_FILE=/opt/_internal/certs.pem
 
 # Packages
 RUN yum -y install alsa-lib-devel wget glibc-devel libstdc++-devel glib2-devel libX11-devel libXext-devel libXrender-devel  mesa-libGL-devel libICE-devel libSM-devel ncurses-devel
@@ -13,12 +19,6 @@ RUN yum -y install alsa-lib-devel wget glibc-devel libstdc++-devel glib2-devel l
 # Install more recent yasm for ffmpeg compilation
 RUN wget http://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el5/en/i386/rpmforge/RPMS/yasm-1.1.0-1.el5.rf.i386.rpm && \
     yum -y --nogpgcheck install yasm-1.1.0-1.el5.rf.i386.rpm
-
-# Build Python
-COPY build_scripts /build_scripts
-RUN linux32 bash build_scripts/build.sh && rm -r build_scripts
-
-ENV SSL_CERT_FILE=/opt/_internal/certs.pem
 
 # libpulse headers
 RUN wget --no-check-certificate https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.tar.gz && \
@@ -35,3 +35,5 @@ RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake28 .
 
 # Run 32-bit uname selection on way into image
 ENTRYPOINT ["linux32"]
+
+CMD ["/bin/bash"]
