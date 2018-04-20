@@ -18,7 +18,7 @@ __all__ = ["docker_builder"]
 from buildbot.process.properties import Interpolate, Property, renderer
 from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
-from buildbot.steps.shell import Compile, SetPropertyFromCommand, ShellCommand
+from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileDownload, FileUpload
 from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.slave import RemoveDirectory
@@ -167,6 +167,20 @@ build_cmd = [
     "--outputdir", "built",
 ]
 
+# The command used to run the test suite.
+test_cmd = [
+    "docker", "run", "--rm=true",
+    "-i", Interpolate("--name=%(prop:buildername)s"),
+    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+    "-w", "/build/",
+    "-e", "PYTHONPATH=built",
+    "-e", "LD_LIBRARY_PATH=built/lib",
+    Interpolate("%(prop:suite)s-%(prop:arch)s"),
+
+    setarch,
+    "/usr/bin/python", "-m", "pytest", "tests",
+]
+
 changelog_msg = Interpolate("Automatic build %(prop:buildnumber)s by builder %(prop:buildername)s")
 
 # Build steps shared by all builders.
@@ -192,6 +206,9 @@ build_steps = [
 
     # Invoke makepanda.
     Compile(command=build_cmd, haltOnFailure=True, env={'PYTHONPATH': python_path}),
+
+    # Run the test suite.
+    Test(command=test_cmd, haltOnFailure=True),
 ]
 
 # Define a global lock, since reprepro won't allow simultaneous access to the repo.
