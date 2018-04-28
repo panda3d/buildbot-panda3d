@@ -7,10 +7,16 @@ PYTHON_DOWNLOAD_URL=https://www.python.org/ftp/python
 # to the ftp mirror:
 OPENSSL_DOWNLOAD_URL=ftp://ftp.openssl.org/source
 # Ditto the curl sources
-CURL_DOWNLOAD_URL=http://curl.askapache.com/download
+# FIXME: This is about the only mirror that supports bootstrapping over a
+# broken version of curl. Unfortunately, we are hardcoding the directory used
+# to download the new version of curl.
+CURL_DOWNLOAD_URL=https://github.com/curl/curl/releases/download/curl-7_57_0
+
+GET_PIP_URL=https://bootstrap.pypa.io/get-pip.py
 
 AUTOCONF_DOWNLOAD_URL=http://ftp.gnu.org/gnu/autoconf
 AUTOMAKE_DOWNLOAD_URL=http://ftp.gnu.org/gnu/automake
+LIBTOOL_DOWNLOAD_URL=http://ftp.gnu.org/gnu/libtool
 
 
 function check_var {
@@ -46,8 +52,7 @@ function do_cpython_build {
     fi
     local prefix="/opt/_internal/cpython-${py_ver}${dir_suffix}"
     mkdir -p ${prefix}/lib
-    # -Wformat added for https://bugs.python.org/issue17547 on Python 2.6
-    CFLAGS="-Wformat" ./configure --prefix=${prefix} --disable-shared $unicode_flags > /dev/null
+    ./configure --prefix=${prefix} --disable-shared $unicode_flags > /dev/null
     make -j2 > /dev/null
     make install > /dev/null
     popd
@@ -61,8 +66,10 @@ function do_cpython_build {
     if [ -e ${prefix}/bin/pip3 ] && [ ! -e ${prefix}/bin/pip ]; then
         ln -s pip3 ${prefix}/bin/pip
     fi
-    ${prefix}/bin/pip install wheel
-    local abi_tag=$(${prefix}/bin/python -c 'from wheel.pep425tags import *;print("{0}{1}-{2}".format(get_abbr_impl(), get_impl_ver(), get_abi_tag()))')
+    # Since we fall back on a canned copy of get-pip.py, we might not have
+    # the latest pip and friends. Upgrade them to make sure.
+    ${prefix}/bin/pip install -U --require-hashes -r ${MY_DIR}/requirements.txt
+    local abi_tag=$(${prefix}/bin/python ${MY_DIR}/python-tag-abi-tag.py)
     ln -s ${prefix} /opt/python/${abi_tag}
 }
 
@@ -71,7 +78,9 @@ function build_cpython {
     local py_ver=$1
     check_var $py_ver
     check_var $PYTHON_DOWNLOAD_URL
-    wget -q $PYTHON_DOWNLOAD_URL/$py_ver/Python-$py_ver.tgz
+    curl -fsSLO $PYTHON_DOWNLOAD_URL/$py_ver/Python-$py_ver.tgz
+    curl -fsSLO $PYTHON_DOWNLOAD_URL/$py_ver/Python-$py_ver.tgz.asc
+    gpg --verify Python-$py_ver.tgz.asc
     if [ $(lex_pyver $py_ver) -lt $(lex_pyver 3.3) ]; then
         #do_cpython_build $py_ver ucs2
         do_cpython_build $py_ver ucs4
@@ -79,13 +88,25 @@ function build_cpython {
         do_cpython_build $py_ver none
     fi
     rm -f Python-$py_ver.tgz
+    rm -f Python-$py_ver.tgz.asc
 }
 
 
 function build_cpythons {
+    check_var $GET_PIP_URL
+    # CentOS 5 curl uses such an old OpenSSL that it doesn't support the TLS
+    # versions used by the get-pip server. Keep trying though, because we'll
+    # want to go back using $GET_PIP_URL when we upgrade to a newer CentOS...
+    curl -sSLO $GET_PIP_URL || cp ${MY_DIR}/get-pip.py .
+    # Import public keys used to verify downloaded Python source tarballs.
+    # https://www.python.org/static/files/pubkeys.txt
+    gpg --import ${MY_DIR}/cpython-pubkeys.txt
     for py_ver in $@; do
         build_cpython $py_ver
     done
+    # Remove GPG hidden directory.
+    rm -rf /root/.gnupg/
+    rm -f get-pip.py
 }
 
 
@@ -114,7 +135,7 @@ function build_openssl {
     local openssl_sha256=$2
     check_var ${openssl_sha256}
     check_var ${OPENSSL_DOWNLOAD_URL}
-    curl -sLO ${OPENSSL_DOWNLOAD_URL}/${openssl_fname}.tar.gz
+    curl -sSLO ${OPENSSL_DOWNLOAD_URL}/${openssl_fname}.tar.gz
     check_sha256sum ${openssl_fname}.tar.gz ${openssl_sha256}
     tar -xzf ${openssl_fname}.tar.gz
     (cd ${openssl_fname} && do_openssl_build)
@@ -135,7 +156,7 @@ function build_curl {
     local curl_sha256=$2
     check_var ${curl_sha256}
     check_var ${CURL_DOWNLOAD_URL}
-    curl -sLO ${CURL_DOWNLOAD_URL}/${curl_fname}.tar.bz2
+    curl -sSLO ${CURL_DOWNLOAD_URL}/${curl_fname}.tar.bz2
     check_sha256sum ${curl_fname}.tar.bz2 ${curl_sha256}
     tar -jxf ${curl_fname}.tar.bz2
     (cd ${curl_fname} && do_curl_build)
@@ -156,12 +177,13 @@ function build_autoconf {
     local autoconf_sha256=$2
     check_var ${autoconf_sha256}
     check_var ${AUTOCONF_DOWNLOAD_URL}
-    curl -sLO ${AUTOCONF_DOWNLOAD_URL}/${autoconf_fname}.tar.gz
+    curl -sSLO ${AUTOCONF_DOWNLOAD_URL}/${autoconf_fname}.tar.gz
     check_sha256sum ${autoconf_fname}.tar.gz ${autoconf_sha256}
     tar -zxf ${autoconf_fname}.tar.gz
     (cd ${autoconf_fname} && do_standard_install)
     rm -rf ${autoconf_fname} ${autoconf_fname}.tar.gz
 }
+
 
 function build_automake {
     local automake_fname=$1
@@ -169,9 +191,23 @@ function build_automake {
     local automake_sha256=$2
     check_var ${automake_sha256}
     check_var ${AUTOMAKE_DOWNLOAD_URL}
-    curl -sLO ${AUTOMAKE_DOWNLOAD_URL}/${automake_fname}.tar.gz
+    curl -sSLO ${AUTOMAKE_DOWNLOAD_URL}/${automake_fname}.tar.gz
     check_sha256sum ${automake_fname}.tar.gz ${automake_sha256}
     tar -zxf ${automake_fname}.tar.gz
     (cd ${automake_fname} && do_standard_install)
     rm -rf ${automake_fname} ${automake_fname}.tar.gz
+}
+
+
+function build_libtool {
+    local libtool_fname=$1
+    check_var ${libtool_fname}
+    local libtool_sha256=$2
+    check_var ${libtool_sha256}
+    check_var ${LIBTOOL_DOWNLOAD_URL}
+    curl -sSLO ${LIBTOOL_DOWNLOAD_URL}/${libtool_fname}.tar.gz
+    check_sha256sum ${libtool_fname}.tar.gz ${libtool_sha256}
+    tar -zxf ${libtool_fname}.tar.gz
+    (cd ${libtool_fname} && do_standard_install)
+    rm -rf ${libtool_fname} ${libtool_fname}.tar.gz
 }
