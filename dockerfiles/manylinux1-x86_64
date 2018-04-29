@@ -16,6 +16,7 @@ RUN wget http://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el5/en/x86_64/rpmforge/R
 
 # Build Python
 COPY build_scripts /build_scripts
+COPY sources /
 RUN bash build_scripts/build.sh && rm -r build_scripts
 
 ENV SSL_CERT_FILE=/opt/_internal/certs.pem

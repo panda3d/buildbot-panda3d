@@ -55,7 +55,7 @@ def setarch(props):
 setup_cmd = [
     "docker", "build", "-t",
     Property("platform"),
-    "."
+    "docker/"
 ]
 
 # The command used to compile Panda3D from source.
@@ -88,17 +88,16 @@ build_steps = [
     # Steps to figure out which .whl version to use.
     ] + whl_version_steps + [
 
-    # Download the Dockerfile for this distribution.
+    # Download and run the script to set up manylinux.
+    FileDownload(mastersrc="build_scripts/prepare_manylinux.sh", slavedest="prepare_manylinux.sh", workdir="."),
+    ShellCommand(name="prepare", command=["bash", "prepare_manylinux.sh"], workdir=".", haltOnFailure=True),
+
+     # Download the Dockerfile for this distribution.
     FileDownload(mastersrc=Interpolate("dockerfiles/manylinux1-%(prop:arch)s"),
-                 slavedest="Dockerfile", workdir="context"),
+                 slavedest="docker/Dockerfile", workdir="manylinux"),
 
-    # And the build scripts.
-    FileDownload(mastersrc="build_scripts/build.sh", slavedest="build_scripts/build.sh", workdir="context"),
-    FileDownload(mastersrc="build_scripts/build_utils.sh", slavedest="build_scripts/build_utils.sh", workdir="context"),
-    FileDownload(mastersrc="build_scripts/get-pip.py", slavedest="build_scripts/get-pip.py", workdir="context"),
-
-    # Build the Docker image.
-    ShellCommand(name="setup", command=setup_cmd, workdir="context", haltOnFailure=True),
+     # Build the Docker image.
+    ShellCommand(name="setup", command=setup_cmd, workdir="manylinux", haltOnFailure=True),
 
     # Invoke makepanda and makewheel.
     Compile(command=build_cmd, haltOnFailure=True),
