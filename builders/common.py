@@ -89,6 +89,9 @@ def is_branched(step):
         merge_base = step.getProperty("merge-base")
         return merge_base != step.getProperty("got_revision")
 
+def is_branch(branch):
+    return lambda step: (step.getProperty("branch") == branch)
+
 @renderer
 def whl_version(props):
     "Determine which PEP 440 version string a .whl package should have."

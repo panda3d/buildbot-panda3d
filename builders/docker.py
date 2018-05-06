@@ -29,7 +29,7 @@ from datetime import date
 import os.path
 
 import config
-from .common import common_flags, buildtype_flag, whl_version_steps, publish_rtdist_steps, MakeTorrent, SeedTorrent
+from .common import common_flags, buildtype_flag, whl_version_steps, publish_rtdist_steps, MakeTorrent, SeedTorrent, is_branch
 
 @renderer
 def upstream_version(props):
@@ -136,7 +136,7 @@ def python_path(props):
 @renderer
 def setarch(props):
     if "arch" in props and props["arch"] != "amd64":
-        return ["setarch", props["arch"]]
+        return ["/usr/bin/setarch", props["arch"]]
     else:
         return []
 
@@ -173,12 +173,27 @@ test_cmd = [
     "-i", Interpolate("--name=%(prop:buildername)s"),
     "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
     "-w", "/build/",
-    "-e", "PYTHONPATH=built",
-    "-e", "LD_LIBRARY_PATH=built/lib",
+    "-e", "PYTHONPATH=/build/built",
+    "-e", "LD_LIBRARY_PATH=/build/built/lib",
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
     setarch,
     "/usr/bin/python", "-m", "pytest", "tests",
+]
+
+# The command used to run the deploy-ng tests.
+test_deployng_cmd = [
+    "docker", "run", "--rm=true",
+    "-i", Interpolate("--name=%(prop:buildername)s"),
+    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+    "-w", "/build/",
+    "-e", "PYTHONPATH=/build/built",
+    "-e", "LD_LIBRARY_PATH=/build/built/lib",
+    "-e", "PATH=/build/built/bin",
+    Interpolate("%(prop:suite)s-%(prop:arch)s"),
+
+    setarch,
+    "/usr/bin/python", "tests/build_samples.py"
 ]
 
 changelog_msg = Interpolate("Automatic build %(prop:buildnumber)s by builder %(prop:buildername)s")
@@ -209,6 +224,9 @@ build_steps = [
 
     # Run the test suite.
     Test(command=test_cmd, haltOnFailure=True),
+
+    # And the test scripts for deploy-ng.
+    Test(name="build_samples", command=test_deployng_cmd, doStepIf=is_branch("deploy-ng"), haltOnFailure=True),
 ]
 
 # Define a global lock, since reprepro won't allow simultaneous access to the repo.
