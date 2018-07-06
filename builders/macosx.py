@@ -3,7 +3,7 @@ __all__ = ["macosx_builder"]
 from buildbot.process.properties import Interpolate, Property, renderer
 from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
-from buildbot.steps.shell import Compile, SetPropertyFromCommand, ShellCommand
+from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileUpload
 from buildbot.steps.master import MasterShellCommand
 from buildbot.steps.slave import RemoveDirectory
@@ -142,6 +142,11 @@ build_cmd = [
     "--version", Property("version"),
 ]
 
+# The command used to run the test suite.
+test_cmd = [
+    python_executable, "-B", "-m", "pytest", "tests",
+]
+
 build_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
@@ -155,6 +160,9 @@ build_steps = [
         env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
              "MAKEPANDA_SDKS": "/Users/buildbot/sdks",
              "PYTHONPATH": python_path}, haltOnFailure=True),
+
+    # Run the test suite.
+    Test(command=test_cmd, env={"PYTHONPATH": outputdir}, haltOnFailure=True),
 ]
 
 build_publish_whl_steps = whl_version_steps + [
