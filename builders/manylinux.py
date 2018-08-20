@@ -7,7 +7,7 @@ __all__ = ["manylinux_builder"]
 from buildbot.process.properties import Interpolate, Property, renderer
 from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
-from buildbot.steps.shell import Compile, SetPropertyFromCommand, ShellCommand
+from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileDownload, FileUpload
 from buildbot.config import BuilderConfig
 
@@ -77,6 +77,21 @@ build_cmd = [
     "--wheel", "--version", whl_version,
 ]
 
+# The command used to run the test suite in a virtualenv.
+test_cmd = [
+    "docker", "run", "--rm=true",
+    #"-i", Interpolate("--name=%(prop:buildername)s"),
+    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+    "-w", "/build/",
+    Property("platform"),
+
+    setarch,
+    python_executable,
+    "makepanda/test_wheel.py",
+    "--verbose",
+    whl_filename,
+]
+
 build_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
@@ -92,15 +107,18 @@ build_steps = [
     FileDownload(mastersrc="build_scripts/prepare_manylinux.sh", slavedest="prepare_manylinux.sh", workdir="."),
     ShellCommand(name="prepare", command=["bash", "prepare_manylinux.sh"], workdir=".", haltOnFailure=True),
 
-     # Download the Dockerfile for this distribution.
+    # Download the Dockerfile for this distribution.
     FileDownload(mastersrc=Interpolate("dockerfiles/manylinux1-%(prop:arch)s"),
                  slavedest="docker/Dockerfile", workdir="manylinux"),
 
-     # Build the Docker image.
+    # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="manylinux", haltOnFailure=True),
 
     # Invoke makepanda and makewheel.
     Compile(command=build_cmd, haltOnFailure=True),
+
+    # Run the test suite, but in a virtualenv.
+    Test(command=test_cmd, haltOnFailure=True),
 
     # Upload the wheel file.
     FileUpload(slavesrc=whl_filename, masterdest=whl_upload_filename,

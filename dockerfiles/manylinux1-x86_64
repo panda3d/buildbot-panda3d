@@ -21,6 +21,10 @@ RUN bash build_scripts/build.sh && rm -r build_scripts
 
 ENV SSL_CERT_FILE=/opt/_internal/certs.pem
 
+# Install virtualenv in Python 2.7 installations
+RUN /opt/python/cp27-cp27m/bin/pip install virtualenv && \
+    /opt/python/cp27-cp27mu/bin/pip install virtualenv
+
 # libpulse headers
 RUN wget --no-check-certificate https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.tar.gz && \
     tar -xzf pulseaudio-9.0.tar.gz && \
