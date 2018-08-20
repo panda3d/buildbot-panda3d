@@ -61,7 +61,7 @@ setup_cmd = [
 # The command used to compile Panda3D from source.
 build_cmd = [
     "docker", "run", "--rm=true",
-    "-i", Interpolate("--name=%(prop:buildername)s"),
+    #"-i", Interpolate("--name=%(prop:buildername)s"),
     "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
     "-w", "/build/",
     Property("platform"),
