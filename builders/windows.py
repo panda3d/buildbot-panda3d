@@ -3,7 +3,7 @@ __all__ = ["windows_builder"]
 from buildbot.process.properties import Property, renderer
 from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
-from buildbot.steps.shell import Compile, SetPropertyFromCommand
+from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand
 from buildbot.steps.transfer import FileUpload
 from buildbot.steps.slave import RemoveDirectory
 from buildbot.config import BuilderConfig
@@ -143,6 +143,13 @@ build_cmd = [
     "--version", whl_version,
 ]
 
+test_cmd = [
+    python_executable,
+    "makepanda\\test_wheel.py",
+    "--verbose",
+    whl_filename,
+]
+
 checkout_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
@@ -163,6 +170,9 @@ build_steps = [
     Compile(command=build_cmd, timeout=6*60*60,
            env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
                 "MAKEPANDA_SDKS": "C:\\sdks"}, haltOnFailure=True),
+
+    # Run the test suite, but in a virtualenv.
+    Test(command=test_cmd, haltOnFailure=True),
 ]
 
 publish_exe_steps = [
