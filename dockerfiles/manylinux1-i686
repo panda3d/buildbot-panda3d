@@ -38,5 +38,8 @@ ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdpar
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
 RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake28 .. && linux32 make VERBOSE=1
 
+# Re-install tk
+RUN yum -y install tk
+
 # Run 32-bit uname selection on way into image
 ENTRYPOINT ["linux32"]
