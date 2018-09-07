@@ -140,7 +140,7 @@ def setarch(props):
     else:
         return []
 
-cloudimg_url = Interpolate("https://partner-images.canonical.com/core/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz")
+cloudimg_cmd = Interpolate("wget -N https://partner-images.canonical.com/core/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz || wget -N https://partner-images.canonical.com/core/unsupported/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz")
 
 # The command to set up the Docker image.
 setup_cmd = [
@@ -214,7 +214,7 @@ build_steps = [
     FileDownload(mastersrc=Interpolate("dockerfiles/%(prop:suite)s-%(prop:arch)s"), slavedest="Dockerfile", workdir="context"),
 
     # Make sure the base distribution is up-to-date.
-    ShellCommand(command=['wget', '-N', cloudimg_url], workdir="context"),
+    ShellCommand(command=cloudimg_cmd, workdir="context"),
 
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="context", haltOnFailure=True),
