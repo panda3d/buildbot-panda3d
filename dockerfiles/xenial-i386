@@ -47,3 +47,5 @@ ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
 RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON .. && linux32 make VERBOSE=1
+
+RUN pip install --upgrade pip
