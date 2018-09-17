@@ -24,9 +24,9 @@ CMD ["/bin/bash"]
 #
 
 # Install more recent yasm for ffmpeg compilation
+RUN yum -y install wget
 RUN wget http://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el5/en/i386/rpmforge/RPMS/yasm-1.1.0-1.el5.rf.i386.rpm && \
     yum -y --nogpgcheck install yasm-1.1.0-1.el5.rf.i386.rpm
-
 
 # Install virtualenv in Python 2.7 installations
 RUN linux32 /opt/python/cp27-cp27m/bin/pip install virtualenv && \
