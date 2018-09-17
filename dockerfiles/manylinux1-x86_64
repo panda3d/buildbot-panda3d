@@ -42,5 +42,5 @@ ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdpar
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
 RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake28 .. && make VERBOSE=1
 
-# Re-install tk
-RUN yum -y install tk
+# Extra Packages for Panda3D
+RUN yum -y install tk gtk2-devel
