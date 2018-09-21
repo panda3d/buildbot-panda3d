@@ -29,6 +29,11 @@ RUN wget http://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el5/en/x86_64/rpmforge/R
 RUN /opt/python/cp27-cp27m/bin/pip install virtualenv && \
     /opt/python/cp27-cp27mu/bin/pip install virtualenv
 
+# Install latest cmake version via pip
+RUN /opt/python/cp36-cp36m/bin/pip install cmake && \
+    ln -s /opt/python/cp36-cp36m/bin/cmake /usr/local/bin/cmake && \
+    cmake --version
+
 # libpulse headers
 RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.tar.gz && \
     tar -xzf pulseaudio-9.0.tar.gz && \
@@ -40,7 +45,7 @@ RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake28 .. && make VERBOSE=1
+RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake .. && make VERBOSE=1
 
 # Extra Packages for Panda3D
 RUN yum -y install tk gtk2-devel
