@@ -103,7 +103,7 @@ def whl_version(props):
     if props["revision"] == "v" + props["version"]:
         # We requested building a particular version tag, so this must be a
         # release.
-        return props["version"]
+        return props["version"] + "+opt" if props["optimize"] else ""
 
     version = tuple(map(int, props["version"].split('.')))
 
@@ -120,6 +120,12 @@ def whl_version(props):
             # If we can't identify the branch we're on, add the commit ID.
             branch = props["got_revision"][:7]
             local += "+g" + props["got_revision"][:7]
+
+    # Is this an optimized build?
+    if props["optimize"]:
+        if "+" not in local:
+            local += "+"
+        local += "opt"
 
     # Is this a post-release build?  Check using the output of "git describe",
     # which contains the last release tag plus the number of commits since it.
@@ -172,10 +178,17 @@ def whl_filename(props):
 @renderer
 def whl_upload_filename(props):
     "Determines the upload location of a .whl file on the master."
+    path_parts = [
+        config.downloads_dir,
+        props["got_revision"],
+    ]
 
-    return '/'.join((config.downloads_dir,
-                     props["got_revision"],
-                     whl_filename.getRenderingFor(props)))
+    if props["optimize"]:
+        path_parts.append('opt')
+
+    path_parts.append(whl_filename.getRenderingFor(props))
+
+    return '/'.join(path_parts)
 
 @renderer
 def common_flags(props):
@@ -212,6 +225,8 @@ def common_flags(props):
         major_version = '.'.join(props["version"].split('.', 2)[:2])
         if props.getProperty("commit-description", "").startswith('v' + major_version + '.'):
             flags.append("--host=https://runtime.panda3d.org/")
+        if props["optimize"]:
+            flags += ["--optimize", "4"]
 
     return flags
 
