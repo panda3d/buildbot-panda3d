@@ -215,7 +215,7 @@ for step in build_steps + publish_rtdist_steps:
     rtdist_factory.addStep(step)
 
 
-def macosx_builder(buildtype, osxver):
+def macosx_builder(buildtype, osxver, optimize=False):
     if buildtype == "sdk":
         name = '-'.join((buildtype, "macosx" + osxver))
     else:
@@ -231,4 +231,4 @@ def macosx_builder(buildtype, osxver):
     return BuilderConfig(name=name,
                          slavenames=config.macosx_slaves,
                          factory=factory,
-                         properties={"osxtarget": osxver, "buildtype": buildtype})
+                         properties={"osxtarget": osxver, "buildtype": buildtype, "optimize": optimize})

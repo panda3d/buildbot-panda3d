@@ -208,7 +208,7 @@ for step in checkout_steps + build_steps + publish_rtdist_steps:
     rtdist_factory.addStep(step)
 
 
-def windows_builder(buildtype, arch):
+def windows_builder(buildtype, arch, optimize=False):
     if buildtype == "rtdist":
         factory = rtdist_factory
     elif buildtype == "runtime":
@@ -224,4 +224,4 @@ def windows_builder(buildtype, arch):
     return BuilderConfig(name='-'.join((buildtype, "windows", arch)),
                          slavenames=config.windows_slaves,
                          factory=factory,
-                         properties={"buildtype": buildtype, "arch": arch, "platform": platform})
+                         properties={"buildtype": buildtype, "arch": arch, "platform": platform, "optimize": optimize})

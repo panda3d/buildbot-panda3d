@@ -130,9 +130,9 @@ for step in build_steps:
     manylinux_factory.addStep(step)
 
 
-def manylinux_builder(suite, arch):
+def manylinux_builder(suite, arch, optimize=False):
     platform = "-".join((suite, arch))
     return BuilderConfig(name=platform,
                          slavenames=config.linux_slaves,
                          factory=manylinux_factory,
-                         properties={"arch": arch, "platform": platform})
+                         properties={"arch": arch, "platform": platform, "optimize": optimize})

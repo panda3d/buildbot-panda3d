@@ -258,4 +258,4 @@ def docker_builder(buildtype, distro, suite, arch):
     return BuilderConfig(name='-'.join((buildtype, suite, arch)),
                          slavenames=config.linux_slaves,
                          factory=deb_factory,
-                         properties={"buildtype": buildtype, "distro": distro, "suite": suite, "arch": arch})
+                         properties={"buildtype": buildtype, "distro": distro, "suite": suite, "arch": arch, "optimize": False})
