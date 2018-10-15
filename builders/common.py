@@ -100,10 +100,12 @@ def whl_version(props):
         # Not building a wheel.
         return props["version"]
 
+    optimize = props.getProperty("optimize", False)
+
     if props["revision"] == "v" + props["version"]:
         # We requested building a particular version tag, so this must be a
         # release.
-        return props["version"]
+        return props["version"] + "+opt" if optimize else ""
 
     version = tuple(map(int, props["version"].split('.')))
 
@@ -121,6 +123,12 @@ def whl_version(props):
             branch = props["got_revision"][:7]
             local += "+g" + props["got_revision"][:7]
 
+        if optimize:
+            local += ".opt"
+    else:
+        if optimize:
+            local += "+opt"
+
     # Is this a post-release build?  Check using the output of "git describe",
     # which contains the last release tag plus the number of commits since it.
     if "commit-description" in props:
@@ -129,7 +137,10 @@ def whl_version(props):
         if desc[0] == "v{0}.{1}.{2}".format(*version):
             if len(desc) == 1:
                 # This is exactly this release.
-                return props["version"]
+                if optimize:
+                    return props["version"] + "+opt"
+                else:
+                    return props["version"]
             else:
                 # This is a post-release.
                 return "{0}.post{1}{2}".format(props["version"], desc[1], local)
@@ -172,10 +183,17 @@ def whl_filename(props):
 @renderer
 def whl_upload_filename(props):
     "Determines the upload location of a .whl file on the master."
+    path_parts = [
+        config.downloads_dir,
+        props["got_revision"],
+    ]
 
-    return '/'.join((config.downloads_dir,
-                     props["got_revision"],
-                     whl_filename.getRenderingFor(props)))
+    if props.getProperty("optimize"):
+        path_parts.append('opt')
+
+    path_parts.append(whl_filename.getRenderingFor(props))
+
+    return '/'.join(path_parts)
 
 @renderer
 def common_flags(props):
@@ -212,6 +230,8 @@ def common_flags(props):
         major_version = '.'.join(props["version"].split('.', 2)[:2])
         if props.getProperty("commit-description", "").startswith('v' + major_version + '.'):
             flags.append("--host=https://runtime.panda3d.org/")
+        if props.getProperty("optimize"):
+            flags += ["--optimize=4"]
 
     return flags
 

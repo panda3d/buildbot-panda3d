@@ -40,7 +40,10 @@ def built_dir(props):
     "Returns the name of the build directory to use."
 
     abi = python_abi.getRenderingFor(props)
-    return "built-" + abi
+    if props.getProperty("optimize"):
+        return "built-" + abi + "-opt"
+    else:
+        return "built-" + abi
 
 @renderer
 def setarch(props):
