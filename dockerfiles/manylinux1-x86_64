@@ -41,6 +41,9 @@ RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.
     cp -r pulseaudio-9.0/src/pulse/*.h /usr/local/include/pulse/ && \
     touch /usr/lib64/libpulse.so
 
+# Install library needed for building ALSA in OpenAL Soft
+RUN yum -y install alsa-lib-devel
+
 # Build thirdparty libraries
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
