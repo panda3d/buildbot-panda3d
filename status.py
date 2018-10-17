@@ -19,7 +19,7 @@ www_status = html.WebStatus(http_port=8010, authz=authz_cfg,
 
 irc_status = words.IRC(host="irc.freenode.net", nick="p3dbuildbot",
                        channels=["#panda3d"], notify_events={
-                           'exception': True,
+                           'exception': False,
                            'failureToSuccess': True,
                            'successToFailure': True})
 
