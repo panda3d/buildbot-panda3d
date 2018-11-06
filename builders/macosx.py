@@ -200,8 +200,8 @@ publish_dmg_steps = [
     FileUpload(slavesrc=dmg_filename, masterdest=dmg_upload_filename,
                mode=0o664, haltOnFailure=True),
 
-    MakeTorrent(dmg_upload_filename),
-    SeedTorrent(dmg_upload_filename),
+    #MakeTorrent(dmg_upload_filename),
+    #SeedTorrent(dmg_upload_filename),
 ]
 
 # Now make the factories.

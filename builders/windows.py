@@ -184,8 +184,8 @@ publish_exe_steps = [
     FileUpload(slavesrc=exe_filename, masterdest=exe_upload_filename,
                mode=0o664, haltOnFailure=True),
 
-    MakeTorrent(exe_upload_filename),
-    SeedTorrent(exe_upload_filename),
+    #MakeTorrent(exe_upload_filename),
+    #SeedTorrent(exe_upload_filename),
 ]
 
 publish_sdk_steps = [

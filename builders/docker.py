@@ -239,8 +239,8 @@ publish_deb_steps = [
                mode=0o664, haltOnFailure=True),
 
     # Create a torrent file and start seeding it.
-    MakeTorrent(deb_upload_filename),
-    SeedTorrent(deb_upload_filename),
+    #MakeTorrent(deb_upload_filename),
+    #SeedTorrent(deb_upload_filename),
 
     # Upload it to an apt repository.
     MasterShellCommand(name="reprepro", command=[
