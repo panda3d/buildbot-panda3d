@@ -126,13 +126,8 @@ def dist_flags(props):
 
 @renderer
 def outputdir(props):
-    if "python-version" in props and props["python-version"] and props["python-version"] != '2.7':
-        pyver = props["python-version"]
-
-        if props.getProperty("optimize"):
-            return ['built-py' + pyver + '-opt']
-        else:
-            return ['built-py' + pyver]
+    if props.getProperty("optimize", False):
+        return ['built-opt']
     else:
         return ['built']
 

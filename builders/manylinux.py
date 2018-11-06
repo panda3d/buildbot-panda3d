@@ -39,11 +39,10 @@ def python_executable(props):
 def built_dir(props):
     "Returns the name of the build directory to use."
 
-    abi = python_abi.getRenderingFor(props)
-    if props.getProperty("optimize"):
-        return "built-" + abi + "-opt"
+    if props.getProperty("optimize", False):
+        return "built-opt"
     else:
-        return "built-" + abi
+        return "built"
 
 @renderer
 def setarch(props):

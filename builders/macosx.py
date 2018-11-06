@@ -126,13 +126,8 @@ def whl_upload_filename64(props):
 
 @renderer
 def outputdir(props):
-    if "buildtype" not in props or props["buildtype"] != "runtime":
-        pyver = python_ver.getRenderingFor(props)[6:]
-
-        if props.getProperty("optimize"):
-            return ['built-py' + pyver + '-opt']
-        else:
-            return ['built-py' + pyver]
+    if props.getProperty("optimize", False):
+        return ['built-opt']
     else:
         return ['built']
 
