@@ -201,6 +201,7 @@ def common_flags(props):
 
     flags = [
         "--verbose",
+        "--no-physx",
         "--nocolor",
         sse2_flag.getRenderingFor(props),
         "--distributor=" + config.distributor,
