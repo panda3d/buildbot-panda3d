@@ -171,14 +171,39 @@ def python_abi(props):
 
     return abi_tag
 
+
+@renderer
+def platform_under(props):
+    "Returns the platform string with an underscore."
+
+    return props["platform"].replace('-', '_')
+
+
+@renderer
+def upload_dir(props):
+    path_parts = [
+        config.downloads_dir,
+        props["got_revision"],
+    ]
+
+    if props.getProperty("optimize"):
+        path_parts.append('opt')
+
+    return '/'.join(path_parts)
+
+
+def get_whl_filename(abi):
+    "Returns the name of a .whl file for uploading, for the given Python ABI."
+
+    return Interpolate("panda3d-%s-%s-%s.whl", whl_version, abi, platform_under)
+
+
 @renderer
 def whl_filename(props):
     "Determines the name of a .whl file for uploading."
 
-    abi = python_abi.getRenderingFor(props)
-    platform = props["platform"].replace('-', '_')
-    version = whl_version.getRenderingFor(props)
-    return "panda3d-{0}-{1}-{2}.whl".format(version, abi, platform)
+    return get_whl_filename(python_abi.getRenderingFor(props))
+
 
 @renderer
 def whl_upload_filename(props):

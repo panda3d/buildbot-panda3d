@@ -12,28 +12,8 @@ from buildbot.steps.transfer import FileDownload, FileUpload
 from buildbot.config import BuilderConfig
 
 import config
-from .common import common_flags, python_abi, whl_version_steps, whl_version, whl_filename, whl_upload_filename
-
-@renderer
-def python_incdir(props):
-    "Returns the path to the Python include directory."
-
-    abi = python_abi.getRenderingFor(props)
-    return "/opt/python/%s/include" % (abi)
-
-@renderer
-def python_libdir(props):
-    "Returns the path to the Python library directory."
-
-    abi = python_abi.getRenderingFor(props)
-    return "/opt/python/%s/lib" % (abi)
-
-@renderer
-def python_executable(props):
-    "Returns the path to the Python executable."
-
-    abi = python_abi.getRenderingFor(props)
-    return "/opt/python/%s/bin/python" % (abi)
+from .common import common_flags, whl_version_steps, whl_version
+from . import common
 
 @renderer
 def built_dir(props):
@@ -53,45 +33,53 @@ def setarch(props):
     else:
         return []
 
+
+def get_build_command(abi):
+    "Returns the command used to compile Panda3D from source."
+
+    return [
+        "docker", "run", "--rm=true",
+        #"-i", Interpolate("--name=%(prop:buildername)s"),
+        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-w", "/build/",
+        Property("platform"),
+
+        setarch,
+        "/opt/python/%s/bin/python" % (abi),
+         "makepanda/makepanda.py",
+        "--everything", "--no-directscripts",
+        "--no-gles", "--no-gles2", "--no-egl",
+        "--python-incdir=/opt/python/%s/include" % (abi),
+        "--python-libdir=/opt/python/%s/lib" % (abi),
+        common_flags,
+        "--outputdir", built_dir,
+        "--wheel", "--version", whl_version,
+    ]
+
+
+def get_test_command(abi, whl_filename):
+    "Returns the command used to run the test suite in a virtualenv."
+
+    return [
+        "docker", "run", "--rm=true",
+        #"-i", Interpolate("--name=%(prop:buildername)s"),
+        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-w", "/build/",
+        Property("platform"),
+
+        setarch,
+        "/opt/python/%s/bin/python" % (abi),
+        "makepanda/test_wheel.py",
+        "--verbose",
+        whl_filename,
+    ]
+
+
 # The command to set up the Docker image.
 setup_cmd = [
     "docker", "build", "-t",
     Property("platform"),
     "docker/"
-]
-
-# The command used to compile Panda3D from source.
-build_cmd = [
-    "docker", "run", "--rm=true",
-    #"-i", Interpolate("--name=%(prop:buildername)s"),
-    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
-    "-w", "/build/",
-    Property("platform"),
-
-    setarch,
-    python_executable, "makepanda/makepanda.py",
-    "--everything", "--no-directscripts",
-    "--no-gles", "--no-gles2", "--no-egl",
-    "--python-incdir", python_incdir,
-    "--python-libdir", python_libdir,
-    common_flags,
-    "--outputdir", built_dir,
-    "--wheel", "--version", whl_version,
-]
-
-# The command used to run the test suite in a virtualenv.
-test_cmd = [
-    "docker", "run", "--rm=true",
-    #"-i", Interpolate("--name=%(prop:buildername)s"),
-    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
-    "-w", "/build/",
-    Property("platform"),
-
-    setarch,
-    python_executable,
-    "makepanda/test_wheel.py",
-    "--verbose",
-    whl_filename,
 ]
 
 build_steps = [
@@ -115,17 +103,25 @@ build_steps = [
 
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="manylinux", haltOnFailure=True),
-
-    # Invoke makepanda and makewheel.
-    Compile(command=build_cmd, haltOnFailure=True),
-
-    # Run the test suite, but in a virtualenv.
-    Test(command=test_cmd, haltOnFailure=True),
-
-    # Upload the wheel file.
-    FileUpload(slavesrc=whl_filename, masterdest=whl_upload_filename,
-            mode=0o664, haltOnFailure=True),
 ]
+
+for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
+    whl_filename = common.get_whl_filename(abi)
+    build_steps += [
+        # Invoke makepanda and makewheel.
+        Compile(name="compile "+abi, command=get_build_command(abi), haltOnFailure=True),
+
+        # Run the test suite in a virtualenv.
+        Test(name="test "+abi, command=get_test_command(abi, whl_filename), haltOnFailure=True),
+
+        # Upload the wheel file.
+        FileUpload(name="upload "+abi, slavesrc=whl_filename,
+                   masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
+                   mode=0o664, haltOnFailure=True),
+
+        # Now delete it.
+        ShellCommand(name="rm "+abi, command=['rm', whl_filename], haltOnFailure=False),
+    ]
 
 manylinux_factory = BuildFactory()
 for step in build_steps:
