@@ -12,117 +12,49 @@ from buildbot.config import BuilderConfig
 import config
 from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, publish_rtdist_steps
 from .common import MakeTorrent, SeedTorrent
+from . import common
+
+
+def get_dmg_filename(abi):
+    "Determines the name of a .dmg file produced by makepanda."
+
+    suffix = ""
+    if not abi.startswith('cp27-'):
+        suffix = "-py%s.%s" % (abi[2], abi[3])
+
+    return Interpolate("Panda3D-%(prop:version)s" + suffix + ".dmg")
+
 
 @renderer
-def dmg_filename(props):
-    "Determines the name of an .dmg file for uploading."
-
-    if "buildtype" in props and props["buildtype"] == "runtime":
-        return "p3d-setup.dmg"
-
-    if "python-version" in props and props["python-version"] and not props["python-version"].startswith("2."):
-        return "Panda3D-%s-py%s.dmg" % (props["version"], props["python-version"])
+def dmg_version(props):
+    if props["revision"].startswith("v"):
+        return props["version"]
     else:
-        return "Panda3D-%s.dmg" % (props["version"])
+        return "%s-%s" % (props["version"], props["got_revision"][:7])
 
-@renderer
-def dmg_upload_filename(props):
+
+def get_dmg_upload_filename(abi):
     "Determines the upload location of an .dmg file on the master."
 
-    if "buildtype" in props and props["buildtype"] == "runtime":
-        prefix = "Panda3D-Runtime"
-        suffix = ""
-    else:
-        prefix = "Panda3D-SDK"
-        suffix = "-MacOSX" + props["osxtarget"]
+    suffix = ""
+    if not abi.startswith('cp27-'):
+        suffix = "-py%s.%s" % (abi[2], abi[3])
 
-    if props["revision"].startswith("v"):
-        basename = "%s-%s%s" % (prefix, props["version"], suffix)
-    else:
-        basename = "%s-%s-%s%s" % (prefix, props["version"], props["got_revision"][:7], suffix)
+    return Interpolate("%s/Panda3D-SDK-%s-MacOSX%s%s.dmg",
+        common.upload_dir, dmg_version, Property("osxtarget"), suffix)
 
-    if "python-version" in props and props["python-version"] and not props["python-version"].startswith("2."):
-        basename += "-py%s" % (props["python-version"])
-
-    basename += ".dmg"
-    return '/'.join((config.downloads_dir, props["got_revision"], basename))
 
 @renderer
-def arch_flags(props):
-    "Returns the appropriate arch flags to use depending on build type."
+def platform_prefix(props):
+    osxver = props["osxtarget"].replace('.', '_')
+    return "macosx_" + osxver
 
-    if "buildtype" in props and props["buildtype"] == "runtime":
-        return "--arch=i386"
-    else:
-        return "--universal"
 
-@renderer
-def dist_flags(props):
-    if "buildtype" in props and props["buildtype"] == "rtdist":
-        return []
-    else:
-        return ["--installer"]
-
-@renderer
-def python_path(props):
-    if "buildtype" in props and props["buildtype"] == "rtdist":
-        return "/Users/buildbot/thirdparty/darwin-libs-a/rocket/lib/python2.7"
-    else:
-        return ""
-
-@renderer
-def python_ver(props):
-    if "python-version" in props and props["python-version"]:
-        return "python" + props["python-version"]
-    elif "buildtype" in props and props["buildtype"] == "rtdist":
-        return "python2.7"
-    #elif "osxtarget" in props and props["osxtarget"] == "10.6":
-    #    return "python2.6"
-    else:
-        return "python2.7"
-
-@renderer
-def python_executable(props):
-    "Returns the path to the Python executable."
-
-    # We always use the build from python.org at the moment.
-    return '/usr/local/bin/' + python_ver.getRenderingFor(props)
-
-@renderer
-def whl_filename32(props):
+def get_whl_filename(abi, arch):
     "Determines the name of a .whl file for uploading."
 
-    pyver = python_ver.getRenderingFor(props)[6:].replace('.', '')
-    abi = props["python-abi"]
-    osxver = props["osxtarget"].replace('.', '_')
-    version = whl_version.getRenderingFor(props)
-    return "panda3d-{0}-cp{1}-{2}-macosx_{3}_i386.whl".format(version, pyver, abi, osxver)
+    return Interpolate("panda3d-%s-%s-%s_%s.whl", whl_version, abi, platform_prefix, arch)
 
-@renderer
-def whl_filename64(props):
-    "Determines the name of a .whl file for uploading."
-
-    pyver = python_ver.getRenderingFor(props)[6:].replace('.', '')
-    abi = props["python-abi"]
-    osxver = props["osxtarget"].replace('.', '_')
-    version = whl_version.getRenderingFor(props)
-    return "panda3d-{0}-cp{1}-{2}-macosx_{3}_x86_64.whl".format(version, pyver, abi, osxver)
-
-@renderer
-def whl_upload_filename32(props):
-    "Determines the upload location of a .whl file on the master."
-
-    return '/'.join((config.downloads_dir,
-                     props["got_revision"],
-                     whl_filename32.getRenderingFor(props)))
-
-@renderer
-def whl_upload_filename64(props):
-    "Determines the upload location of a .whl file on the master."
-
-    return '/'.join((config.downloads_dir,
-                     props["got_revision"],
-                     whl_filename64.getRenderingFor(props)))
 
 @renderer
 def outputdir(props):
@@ -131,103 +63,99 @@ def outputdir(props):
     else:
         return ['built']
 
-build_cmd = [
-    python_executable, "makepanda/makepanda.py",
-    "--everything",
-    "--outputdir", outputdir,
-    common_flags, arch_flags, dist_flags,
-    "--osxtarget", Property("osxtarget"),
-    "--no-gles", "--no-gles2", "--no-egl",
-    "--version", Property("version"),
-]
 
-# The command used to run the test suite.
-test_cmd = [
-    python_executable, "-B", "-m", "pytest", "tests",
-]
+def get_build_command(abi):
+    return [
+        "/usr/local/bin/python%s.%s" % (abi[2], abi[3]),
+        "makepanda/makepanda.py",
+        "--everything",
+        "--outputdir", outputdir,
+        common_flags, "--universal", "--installer",
+        "--osxtarget", Property("osxtarget"),
+        "--no-gles", "--no-gles2", "--no-egl",
+        "--version", Property("version"),
+    ]
+
+
+def get_test_command(abi):
+    return [
+        "/usr/local/bin/python%s.%s" % (abi[2], abi[3]),
+        "-B", "-m", "pytest", "tests",
+    ]
+
+
+def get_makewheel_command(abi, arch):
+    return [
+        "/usr/local/bin/python%s.%s" % (abi[2], abi[3]),
+        "makepanda/makewheel.py",
+        "--outputdir", outputdir,
+        "--version", whl_version,
+        "--platform", Interpolate("macosx-%(prop:osxtarget)s-" + arch),
+        "--verbose",
+    ]
+
 
 build_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        python_executable, "makepanda/getversion.py", buildtype_flag],
+        "python", "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
-
-    # Run makepanda - give it enough timeout (1h)
-    Compile(command=build_cmd, timeout=1*60*60,
-        env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
-             "MAKEPANDA_SDKS": "/Users/buildbot/sdks",
-             "PYTHONPATH": python_path}, haltOnFailure=True),
-
-    # Run the test suite.
-    Test(command=test_cmd, env={"PYTHONPATH": outputdir}, haltOnFailure=True),
 ]
 
-build_publish_whl_steps = whl_version_steps + [
-    SetPropertyFromCommand("python-abi", command=[
-        python_executable, "-c", "import makewheel;print(makewheel.get_abi_tag())"],
-        workdir="build/makepanda", haltOnFailure=True),
+build_steps += whl_version_steps
 
-    # Build two wheels: one for 32-bit, the other for 64-bit.
-    # makewheel is clever enough to use "lipo" to extract the right arch.
-    ShellCommand(name="makewheel", command=[
-        python_executable, "makepanda/makewheel.py",
-        "--outputdir", outputdir,
-        "--version", whl_version,
-        "--platform", Interpolate("macosx-%(prop:osxtarget)s-i386"),
-        "--verbose"], haltOnFailure=True),
+for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
+    whl_filename32 = get_whl_filename(abi, 'i386')
+    whl_filename64 = get_whl_filename(abi, 'x86_64')
+    dmg_filename = get_dmg_filename(abi)
 
-    ShellCommand(name="makewheel", command=[
-        python_executable, "makepanda/makewheel.py",
-        "--outputdir", outputdir,
-        "--version", whl_version,
-        "--platform", Interpolate("macosx-%(prop:osxtarget)s-x86_64"),
-        "--verbose"], haltOnFailure=True),
+    build_steps += [
+        # Run makepanda - give it enough timeout (1h)
+        Compile(name='compile '+abi, command=get_build_command(abi), timeout=1*60*60,
+                env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
+                     "MAKEPANDA_SDKS": "/Users/buildbot/sdks"}, haltOnFailure=True),
 
-    FileUpload(slavesrc=whl_filename32, masterdest=whl_upload_filename32,
-               mode=0o664, haltOnFailure=True),
-    FileUpload(slavesrc=whl_filename64, masterdest=whl_upload_filename64,
-               mode=0o664, haltOnFailure=True),
-]
+        # Run the test suite.
+        Test(name='test '+abi, command=get_test_command(abi),
+             env={"PYTHONPATH": outputdir}, haltOnFailure=True),
 
-publish_dmg_steps = [
-    FileUpload(slavesrc=dmg_filename, masterdest=dmg_upload_filename,
-               mode=0o664, haltOnFailure=True),
+        # Build two wheels: one for 32-bit, the other for 64-bit.
+        # makewheel is clever enough to use "lipo" to extract the right arch.
+        ShellCommand(name="makewheel i386 "+abi,
+                     command=get_makewheel_command(abi, 'i386'),
+                     haltOnFailure=True),
 
-    #MakeTorrent(dmg_upload_filename),
-    #SeedTorrent(dmg_upload_filename),
-]
+        ShellCommand(name="makewheel x86_64 "+abi,
+                     command=get_makewheel_command(abi, 'x86_64'),
+                     haltOnFailure=True),
 
-# Now make the factories.
+        FileUpload(name="upload i386 "+abi, slavesrc=whl_filename32,
+                   masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename32),
+                   mode=0o664, haltOnFailure=True),
+        FileUpload(name="upload x86_64 "+abi, slavesrc=whl_filename64,
+                   masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename64),
+                   mode=0o664, haltOnFailure=True),
+        FileUpload(name="upload dmg "+abi, slavesrc=dmg_filename,
+                   masterdest=get_dmg_upload_filename(abi),
+                   mode=0o664, haltOnFailure=True),
+
+        # Now delete them.
+        ShellCommand(name="rm "+abi, command=['rm', whl_filename32, whl_filename64, dmg_filename], haltOnFailure=False),
+    ]
+
+
 sdk_factory = BuildFactory()
-for step in build_steps + build_publish_whl_steps + publish_dmg_steps:
+for step in build_steps:
     sdk_factory.addStep(step)
 
-runtime_factory = BuildFactory()
-for step in build_steps + publish_dmg_steps:
-    runtime_factory.addStep(step)
 
-rtdist_factory = BuildFactory()
-#rtdist_factory.addStep(RemoveDirectory(dir="built/stage"))
-for step in build_steps + publish_rtdist_steps:
-    rtdist_factory.addStep(step)
-
-
-def macosx_builder(buildtype, osxver):
-    if buildtype == "sdk":
-        name = '-'.join((buildtype, "macosx" + osxver))
-    else:
-        name = '-'.join((buildtype, "macosx"))
-
-    if buildtype == "rtdist":
-        factory = rtdist_factory
-    elif buildtype == "runtime":
-        factory = runtime_factory
-    else:
-        factory = sdk_factory
+def macosx_builder(osxver):
+    name = 'sdk-macosx' + osxver
+    factory = sdk_factory
 
     return BuilderConfig(name=name,
                          slavenames=config.macosx_slaves,
-                         factory=factory,
-                         properties={"osxtarget": osxver, "buildtype": buildtype})
+                         factory=sdk_factory,
+                         properties={"osxtarget": osxver, "buildtype": "sdk"})

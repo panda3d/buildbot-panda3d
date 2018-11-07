@@ -202,7 +202,7 @@ def get_whl_filename(abi):
 def whl_filename(props):
     "Determines the name of a .whl file for uploading."
 
-    return get_whl_filename(python_abi.getRenderingFor(props))
+    return get_whl_filename(python_abi).getRenderingFor(props)
 
 
 @renderer
@@ -213,10 +213,10 @@ def whl_upload_filename(props):
         props["got_revision"],
     ]
 
-    if props.getProperty("optimize"):
+    if props.getProperty("optimize", False):
         path_parts.append('opt')
 
-    path_parts.append(whl_filename.getRenderingFor(props))
+    path_parts.append(get_whl_filename(python_abi).getRenderingFor(props))
 
     return '/'.join(path_parts)
 
