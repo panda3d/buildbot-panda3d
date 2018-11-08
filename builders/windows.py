@@ -1,128 +1,85 @@
 __all__ = ["windows_builder"]
 
-from buildbot.process.properties import Property, renderer
+from buildbot.process.properties import Interpolate, Property, renderer
 from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
-from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand
+from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileUpload
 from buildbot.steps.slave import RemoveDirectory
 from buildbot.config import BuilderConfig
 
 import config
-from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, whl_filename, whl_upload_filename, publish_rtdist_steps
+from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, get_whl_filename, publish_rtdist_steps
 from .common import MakeTorrent, SeedTorrent
+from . import common
+
 
 @renderer
-def exe_filename(props):
+def arch_suffix(props):
+    if props["arch"] == "amd64":
+        return "-x64"
+    else:
+        return ""
+
+
+def get_exe_filename(abi):
     "Determines the name of an .exe file for uploading."
 
-    if props["arch"] == "amd64":
-        suffix = "-x64"
-    else:
-        suffix = ""
+    suffix = ""
+    if not abi.startswith('cp27-'):
+        suffix = "-py%s.%s" % (abi[2], abi[3])
 
-    if "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
-        suffix = "-py" + props["python-version"] + suffix
+    return Interpolate("Panda3D-%s%s%s.exe", Property("version"), suffix, arch_suffix)
 
-    if "buildtype" in props and props["buildtype"] == "runtime":
-        prefix = "Panda3D-Runtime"
-    else:
-        prefix = "Panda3D"
 
-    return "%s-%s%s.exe" % (prefix, props["version"], suffix)
-
-@renderer
-def pdb_filename(props):
+def get_pdb_filename(abi):
     "Determines the name of an -pdb.zip file for uploading."
 
-    if props["arch"] == "amd64":
-        suffix = "-x64"
-    else:
-        suffix = ""
+    suffix = ""
+    if not abi.startswith('cp27-'):
+        suffix = "-py%s.%s" % (abi[2], abi[3])
 
-    if "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
-        suffix = "-py" + props["python-version"] + suffix
+    return Interpolate("Panda3D-%s%s%s-pdb.zip", Property("version"), suffix, arch_suffix)
 
-    return "Panda3D-%s%s-pdb.zip" % (props["version"], suffix)
 
 @renderer
-def exe_upload_filename(props):
+def exe_version(props):
+    if props["revision"].startswith("v"):
+        return props["version"]
+    else:
+        return "%spre-%s" % (props["version"], props["got_revision"][:7])
+
+
+def get_exe_upload_filename(abi):
     "Determines the upload location of an .exe file on the master."
 
-    if props["arch"] == "amd64":
-        suffix = "-x64"
-    else:
-        suffix = ""
+    suffix = ""
+    if not abi.startswith('cp27-'):
+        suffix = "-py%s.%s" % (abi[2], abi[3])
 
-    if "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
-        suffix = "-py" + props["python-version"] + suffix
+    return Interpolate("%s/Panda3D-SDK-%s%s%s.exe",
+        common.upload_dir, exe_version, suffix, arch_suffix)
 
-    if "buildtype" in props and props["buildtype"] == "runtime":
-        prefix = "Panda3D-Runtime"
-    else:
-        prefix = "Panda3D-SDK"
 
-    if props["revision"].startswith("v"):
-        basename = "%s-%s%s.exe" % (prefix, props["version"], suffix)
-    #elif "commit-description" in props:
-    #    basename = "%s-%s%s.exe" % (prefix, props["commit-description"][1:], suffix)
-    else:
-        basename = "%s-%spre-%s%s.exe" % (prefix, props["version"], props["got_revision"][:7], suffix)
-
-    return '/'.join((config.downloads_dir, props["got_revision"], basename))
-
-@renderer
-def pdb_upload_filename(props):
+def get_pdb_upload_filename(abi):
     "Determines the upload location of a -pdb.zip file on the master."
 
-    if props["arch"] == "amd64":
-        suffix = "-x64"
+    suffix = ""
+    if not abi.startswith('cp27-'):
+        suffix = "-py%s.%s" % (abi[2], abi[3])
+
+    return Interpolate("%s/Panda3D-SDK-%s%s%s-pdb.zip",
+        common.upload_dir, exe_version, suffix, arch_suffix)
+
+
+def get_python_executable(abi):
+    "Determines the location of python.exe."
+
+    if abi == "cp27-cp27m":
+        return Interpolate("C:\\thirdparty\\win-python%s\\python.exe", arch_suffix)
     else:
-        suffix = ""
+        return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python.exe", abi[2], abi[3], arch_suffix)
 
-    if "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
-        suffix = "-py" + props["python-version"] + suffix
-
-    if props["revision"].startswith("v"):
-        basename = "Panda3D-SDK-%s%s-pdb.zip" % (props["version"], suffix)
-    #elif "commit-description" in props:
-    #    basename = "Panda3D-SDK-%s%s-pdb.zip" % (props["commit-description"][1:], suffix)
-    else:
-        basename = "Panda3D-SDK-%spre-%s%s-pdb.zip" % (props["version"], props["got_revision"][:7], suffix)
-
-    return '/'.join((config.downloads_dir, props["got_revision"], basename))
-
-@renderer
-def python_executable(props):
-    "Determines the location of python.exe on the slave."
-
-    if props["arch"] == "amd64":
-        suffix = "-x64"
-    else:
-        suffix = ""
-
-    if "buildtype" in props and props["buildtype"] == "rtdist":
-        return 'C:\\Python27%s\\python.exe' % (suffix)
-    elif "python-version" in props and props["python-version"] and props["python-version"] != "2.7":
-        return 'C:\\thirdparty\\win-python%s%s\\python.exe' % (props["python-version"], suffix)
-    else:
-        return 'C:\\thirdparty\\win-python%s\\python.exe' % (suffix)
-
-@renderer
-def dist_flags(props):
-    if "buildtype" in props and props["buildtype"] == "rtdist":
-        return []
-    elif "buildtype" in props and props["buildtype"] == "runtime":
-        return ["--installer", "--lzma"]
-
-    pythonv = (2, 7)
-    if "python-version" in props and props["python-version"]:
-        pythonv = tuple(map(int, props["python-version"].split('.')))
-
-    if pythonv >= (3, 5):
-        return ["--installer", "--lzma", "--msvc-version=14", "--wheel"]
-    else:
-        return ["--installer", "--lzma", "--wheel"]
 
 @renderer
 def outputdir(props):
@@ -131,97 +88,91 @@ def outputdir(props):
     else:
         return ['built']
 
-build_cmd = [
-    python_executable,
-    "makepanda\\makepanda.py",
-    "--everything",
-    "--outputdir=built",
-    "--no-touchinput",
-    common_flags, dist_flags,
-    "--outputdir", outputdir,
-    "--arch", Property("arch"),
-    "--version", whl_version,
-]
 
-test_cmd = [
-    python_executable,
-    "makepanda\\test_wheel.py",
-    "--verbose",
-    whl_filename,
-]
+def get_build_command(abi):
+    return [
+        get_python_executable(abi),
+        "makepanda\\makepanda.py",
+        "--everything",
+        "--outputdir", outputdir,
+        "--no-touchinput",
+        common_flags,
+        "--outputdir", outputdir,
+        "--arch", Property("arch"),
+        "--version", whl_version,
+        "--installer", "--lzma", "--wheel",
+    ]
 
-checkout_steps = [
+
+def get_test_command(abi, whl_filename):
+    return [
+        get_python_executable(abi),
+        "makepanda\\test_wheel.py",
+        "--verbose",
+        whl_filename,
+    ]
+
+
+build_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        python_executable, "makepanda/getversion.py", buildtype_flag],
+        get_python_executable("cp27-cp27m"),
+        "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
 ]
 
-whl_steps = [
-    SetPropertyFromCommand("python-abi", command=[
-        python_executable, "-c", "import makewheel;print(makewheel.get_abi_tag())"],
-        workdir="build/makepanda", haltOnFailure=True),
-] + whl_version_steps
+build_steps += whl_version_steps
 
-build_steps = [
-    # Run makepanda - give it enough timeout (6h) since some steps take ages
-    Compile(command=build_cmd, timeout=6*60*60,
-           env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
-                "MAKEPANDA_SDKS": "C:\\sdks"}, haltOnFailure=True),
+for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
+    whl_filename = get_whl_filename(abi)
+    exe_filename = get_exe_filename(abi)
+    pdb_filename = get_pdb_filename(abi)
 
-    # Run the test suite, but in a virtualenv.
-    Test(command=test_cmd, haltOnFailure=True),
-]
+    build_steps += [
+        # Run makepanda. Give it enough timeout (6h) since some steps take ages
+        Compile(name="compile "+abi, timeout=6*60*60,
+                command=get_build_command(abi),
+                env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
+                     "MAKEPANDA_SDKS": "C:\\sdks"}, haltOnFailure=True),
 
-publish_exe_steps = [
-    FileUpload(slavesrc=exe_filename, masterdest=exe_upload_filename,
-               mode=0o664, haltOnFailure=True),
+        # Run the test suite, but in a virtualenv.
+        Test(name="test "+abi,
+             command=get_test_command(abi, whl_filename),
+             haltOnFailure=True),
 
-    #MakeTorrent(exe_upload_filename),
-    #SeedTorrent(exe_upload_filename),
-]
+        # Upload the files.
+        FileUpload(name="upload whl "+abi, slavesrc=whl_filename,
+                   masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
+                   mode=0o664, haltOnFailure=True),
+        FileUpload(name="upload exe "+abi, slavesrc=exe_filename,
+                   masterdest=get_exe_upload_filename(abi),
+                   mode=0o664, haltOnFailure=True),
+        FileUpload(name="upload pdb "+abi, slavesrc=pdb_filename,
+                   masterdest=get_pdb_upload_filename(abi),
+                   mode=0o664, haltOnFailure=True),
 
-publish_sdk_steps = [
-    # Upload the wheel.
-    FileUpload(slavesrc=whl_filename, masterdest=whl_upload_filename,
-               mode=0o664, haltOnFailure=True),
+        # Clean up the created files.
+        ShellCommand(name="del "+abi,
+                     command=["del", "/Q", whl_filename, exe_filename, pdb_filename],
+                     haltOnFailure=False),
+    ]
 
-    # Upload the pdb zip file.
-    FileUpload(slavesrc=pdb_filename, masterdest=pdb_upload_filename,
-               mode=0o664, haltOnFailure=False),
-] + publish_exe_steps
 
 # Now make the factories.
 sdk_factory = BuildFactory()
-for step in checkout_steps + whl_steps + build_steps + publish_sdk_steps:
+for step in build_steps:
     sdk_factory.addStep(step)
 
-runtime_factory = BuildFactory()
-for step in checkout_steps + build_steps + publish_exe_steps:
-    runtime_factory.addStep(step)
 
-rtdist_factory = BuildFactory()
-rtdist_factory.addStep(RemoveDirectory(dir="built/slave"))
-for step in checkout_steps + build_steps + publish_rtdist_steps:
-    rtdist_factory.addStep(step)
-
-
-def windows_builder(buildtype, arch):
-    if buildtype == "rtdist":
-        factory = rtdist_factory
-    elif buildtype == "runtime":
-        factory = runtime_factory
-    else:
-        factory = sdk_factory
-
+def windows_builder(arch):
     if arch == "amd64":
         platform = "win_amd64"
     else:
         platform = "win32"
 
-    return BuilderConfig(name='-'.join((buildtype, "windows", arch)),
+    return BuilderConfig(name='-'.join(("sdk", "windows", arch)),
                          slavenames=config.windows_slaves,
-                         factory=factory,
-                         properties={"buildtype": buildtype, "arch": arch, "platform": platform})
+                         factory=sdk_factory,
+                         properties={"buildtype": "sdk", "arch": arch, "platform": platform})

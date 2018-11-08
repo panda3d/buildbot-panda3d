@@ -149,28 +149,6 @@ def whl_version(props):
     # commits since the last major release.
     return "{0}.dev{1}{2}".format(props["version"], props["commit-index"], local)
 
-@renderer
-def python_abi(props):
-    "Determine which Python ABI a build uses."
-
-    # If the builder didn't set this property, determine it from the Python
-    # version.
-    if "python-version" in props and props["python-version"]:
-        version = props["python-version"].replace('.', '')
-    else:
-        version = "27"
-
-    if "python-abi" in props and props["python-abi"]:
-        return "cp{0}-{1}".format(version, props["python-abi"])
-
-    abi_tag = "cp{0}-cp{0}m".format(version)
-    if version[0] == '2':
-        # This assumes we're on Linux.  On other platforms, set the python-abi
-        # property appropriately, please.
-        abi_tag += 'u'
-
-    return abi_tag
-
 
 @renderer
 def platform_under(props):
@@ -197,28 +175,6 @@ def get_whl_filename(abi):
 
     return Interpolate("panda3d-%s-%s-%s.whl", whl_version, abi, platform_under)
 
-
-@renderer
-def whl_filename(props):
-    "Determines the name of a .whl file for uploading."
-
-    return get_whl_filename(python_abi).getRenderingFor(props)
-
-
-@renderer
-def whl_upload_filename(props):
-    "Determines the upload location of a .whl file on the master."
-    path_parts = [
-        config.downloads_dir,
-        props["got_revision"],
-    ]
-
-    if props.getProperty("optimize", False):
-        path_parts.append('opt')
-
-    path_parts.append(get_whl_filename(python_abi).getRenderingFor(props))
-
-    return '/'.join(path_parts)
 
 @renderer
 def common_flags(props):
