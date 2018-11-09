@@ -125,7 +125,7 @@ build_steps = [
 
 build_steps += whl_version_steps
 
-for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
+for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
     whl_filename = get_whl_filename(abi)
     exe_filename = get_exe_filename(abi)
     pdb_filename = get_pdb_filename(abi)
