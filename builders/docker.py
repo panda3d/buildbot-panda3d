@@ -123,7 +123,7 @@ def dist_flags(props):
             "--zlib-libdir=/home/buildbot/rtdist_zlib/lib_%s" % arch]
     else:
         # The other builds link against the regular system version.
-        return ["--installer"]
+        return []
 
 @renderer
 def python_path(props):
@@ -140,6 +140,14 @@ def setarch(props):
     else:
         return []
 
+def get_python_executable(ver):
+    "Determines the location of python."
+
+    if str(ver) == "2":
+        return "/usr/bin/python"
+    else:
+        return "/usr/bin/python" + str(ver)
+
 cloudimg_cmd = Interpolate("wget -N https://partner-images.canonical.com/core/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz || wget -N https://partner-images.canonical.com/core/unsupported/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz")
 
 # The command to set up the Docker image.
@@ -149,8 +157,44 @@ setup_cmd = [
     "."
 ]
 
-# The command used to compile Panda3D from source.
-build_cmd = [
+
+def get_build_command(ver):
+    return [
+        "docker", "run", "--rm=true",
+        "-i", Interpolate("--name=%(prop:buildername)s"),
+        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-w", "/build/",
+        Interpolate("%(prop:suite)s-%(prop:arch)s"),
+
+        setarch,
+        get_python_executable(ver),
+        "makepanda/makepanda.py",
+        "--everything",
+        "--no-gles", "--no-gles2", "--no-egl",
+        common_flags, dist_flags,
+        "--debversion", debian_version,
+        "--version", Property("version"),
+        "--outputdir", "built",
+    ]
+
+
+def get_test_command(ver):
+    return [
+        "docker", "run", "--rm=true",
+        "-i", Interpolate("--name=%(prop:buildername)s"),
+        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-w", "/build/",
+        "-e", "PYTHONPATH=/build/built",
+        "-e", "LD_LIBRARY_PATH=/build/built/lib",
+        Interpolate("%(prop:suite)s-%(prop:arch)s"),
+
+        setarch,
+        get_python_executable(ver),
+        "-m", "pytest", "tests",
+    ]
+
+
+package_cmd = [
     "docker", "run", "--rm=true",
     "-i", Interpolate("--name=%(prop:buildername)s"),
     "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
@@ -158,28 +202,13 @@ build_cmd = [
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
     setarch,
-    "/usr/bin/python", "makepanda/makepanda.py",
-    "--everything",
-    "--no-gles", "--no-gles2", "--no-egl",
-    common_flags, dist_flags,
+    "/usr/bin/python", "makepanda/makepackage.py",
+    "--verbose",
     "--debversion", debian_version,
     "--version", Property("version"),
-    "--outputdir", "built",
+    "--outputdir=built",
 ]
 
-# The command used to run the test suite.
-test_cmd = [
-    "docker", "run", "--rm=true",
-    "-i", Interpolate("--name=%(prop:buildername)s"),
-    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
-    "-w", "/build/",
-    "-e", "PYTHONPATH=/build/built",
-    "-e", "LD_LIBRARY_PATH=/build/built/lib",
-    Interpolate("%(prop:suite)s-%(prop:arch)s"),
-
-    setarch,
-    "/usr/bin/python", "-m", "pytest", "tests",
-]
 
 # The command used to run the deploy-ng tests.
 test_deployng_cmd = [
@@ -220,10 +249,21 @@ build_steps = [
     ShellCommand(name="setup", command=setup_cmd, workdir="context", haltOnFailure=True),
 
     # Invoke makepanda.
-    Compile(command=build_cmd, haltOnFailure=True, env={'PYTHONPATH': python_path}),
+    Compile(name="compile py2",
+            command=get_build_command(2),
+            haltOnFailure=True,
+            env={'PYTHONPATH': python_path}),
+    Compile(name="compile py3",
+            command=get_build_command(3),
+            haltOnFailure=True,
+            env={'PYTHONPATH': python_path}),
 
     # Run the test suite.
-    Test(command=test_cmd, haltOnFailure=True),
+    Test(name="test py2", command=get_test_command(2), haltOnFailure=True),
+    Test(name="test py3", command=get_test_command(3), haltOnFailure=True),
+
+    # Build the installer.
+    ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
 
     # And the test scripts for deploy-ng.
     Test(name="build_samples", command=test_deployng_cmd, doStepIf=is_branch("deploy-ng"), haltOnFailure=True),

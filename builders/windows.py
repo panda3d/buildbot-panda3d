@@ -22,21 +22,21 @@ def arch_suffix(props):
         return ""
 
 
-def get_exe_filename(abi):
+def get_exe_filename(abi=None):
     "Determines the name of an .exe file for uploading."
 
     suffix = ""
-    if not abi.startswith('cp27-'):
+    if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3])
 
     return Interpolate("Panda3D-%s%s%s.exe", Property("version"), suffix, arch_suffix)
 
 
-def get_pdb_filename(abi):
+def get_pdb_filename(abi=None):
     "Determines the name of an -pdb.zip file for uploading."
 
     suffix = ""
-    if not abi.startswith('cp27-'):
+    if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3])
 
     return Interpolate("Panda3D-%s%s%s-pdb.zip", Property("version"), suffix, arch_suffix)
@@ -50,22 +50,22 @@ def exe_version(props):
         return "%spre-%s" % (props["version"], props["got_revision"][:7])
 
 
-def get_exe_upload_filename(abi):
+def get_exe_upload_filename(abi=None):
     "Determines the upload location of an .exe file on the master."
 
     suffix = ""
-    if not abi.startswith('cp27-'):
+    if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3])
 
     return Interpolate("%s/Panda3D-SDK-%s%s%s.exe",
         common.upload_dir, exe_version, suffix, arch_suffix)
 
 
-def get_pdb_upload_filename(abi):
+def get_pdb_upload_filename(abi=None):
     "Determines the upload location of a -pdb.zip file on the master."
 
     suffix = ""
-    if not abi.startswith('cp27-'):
+    if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3])
 
     return Interpolate("%s/Panda3D-SDK-%s%s%s-pdb.zip",
@@ -89,8 +89,8 @@ def outputdir(props):
         return ['built']
 
 
-def get_build_command(abi):
-    return [
+def get_build_command(abi, copy_python=False):
+    command = [
         get_python_executable(abi),
         "makepanda\\makepanda.py",
         "--everything",
@@ -100,8 +100,11 @@ def get_build_command(abi):
         "--outputdir", outputdir,
         "--arch", Property("arch"),
         "--version", whl_version,
-        "--installer", "--lzma", "--wheel",
+        "--wheel",
     ]
+    if not copy_python:
+        command += ["--no-copy-python"]
+    return command
 
 
 def get_test_command(abi, whl_filename):
@@ -112,6 +115,16 @@ def get_test_command(abi, whl_filename):
         whl_filename,
     ]
 
+
+# The command used to create the .exe installer.
+package_cmd = [
+    # It doesn't matter what Python version we call this with.
+    get_python_executable("cp27-cp27m"),
+    "makepanda\\makepackage.py",
+    "--verbose", "--lzma",
+    "--version", Property("version"),
+    "--outputdir", outputdir,
+]
 
 build_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
@@ -127,13 +140,12 @@ build_steps += whl_version_steps
 
 for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
     whl_filename = get_whl_filename(abi)
-    exe_filename = get_exe_filename(abi)
-    pdb_filename = get_pdb_filename(abi)
+    copy_python = (abi == 'cp37-cp37m')
 
     build_steps += [
         # Run makepanda. Give it enough timeout (6h) since some steps take ages
         Compile(name="compile "+abi, timeout=6*60*60,
-                command=get_build_command(abi),
+                command=get_build_command(abi, copy_python=copy_python),
                 env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
                      "MAKEPANDA_SDKS": "C:\\sdks"}, haltOnFailure=True),
 
@@ -142,23 +154,31 @@ for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
              command=get_test_command(abi, whl_filename),
              haltOnFailure=True),
 
-        # Upload the files.
+        # Upload the wheel.
         FileUpload(name="upload whl "+abi, slavesrc=whl_filename,
                    masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
-                   mode=0o664, haltOnFailure=True),
-        FileUpload(name="upload exe "+abi, slavesrc=exe_filename,
-                   masterdest=get_exe_upload_filename(abi),
-                   mode=0o664, haltOnFailure=True),
-        FileUpload(name="upload pdb "+abi, slavesrc=pdb_filename,
-                   masterdest=get_pdb_upload_filename(abi),
                    mode=0o664, haltOnFailure=True),
 
         # Clean up the created files.
         ShellCommand(name="del "+abi,
-                     command=["del", "/Q", whl_filename, exe_filename, pdb_filename],
+                     command=["del", "/Q", whl_filename],
                      haltOnFailure=False),
     ]
 
+# Build and upload the installer.
+build_steps += [
+    ShellCommand(name="package", command=package_cmd,
+                 env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty"},
+                 haltOnFailure=True),
+
+    FileUpload(name="upload exe", slavesrc=get_exe_filename(),
+               masterdest=get_exe_upload_filename(),
+               mode=0o664, haltOnFailure=True),
+
+    FileUpload(name="upload pdb", slavesrc=get_pdb_filename(),
+               masterdest=get_pdb_upload_filename(),
+               mode=0o664, haltOnFailure=True),
+]
 
 # Now make the factories.
 sdk_factory = BuildFactory()

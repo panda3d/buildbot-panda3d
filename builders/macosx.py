@@ -15,11 +15,11 @@ from .common import MakeTorrent, SeedTorrent
 from . import common
 
 
-def get_dmg_filename(abi):
+def get_dmg_filename(abi=None):
     "Determines the name of a .dmg file produced by makepanda."
 
     suffix = ""
-    if not abi.startswith('cp27-'):
+    if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3])
 
     return Interpolate("Panda3D-%(prop:version)s" + suffix + ".dmg")
@@ -33,11 +33,11 @@ def dmg_version(props):
         return "%s-%s" % (props["version"], props["got_revision"][:7])
 
 
-def get_dmg_upload_filename(abi):
+def get_dmg_upload_filename(abi=None):
     "Determines the upload location of an .dmg file on the master."
 
     suffix = ""
-    if not abi.startswith('cp27-'):
+    if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3])
 
     return Interpolate("%s/Panda3D-SDK-%s-MacOSX%s%s.dmg",
@@ -70,7 +70,7 @@ def get_build_command(abi):
         "makepanda/makepanda.py",
         "--everything",
         "--outputdir", outputdir,
-        common_flags, "--universal", "--installer",
+        common_flags, "--universal",
         "--osxtarget", Property("osxtarget"),
         "--no-gles", "--no-gles2", "--no-egl",
         "--version", Property("version"),
@@ -95,6 +95,14 @@ def get_makewheel_command(abi, arch):
     ]
 
 
+# The command used to create the .dmg installer.
+package_cmd = [
+    "python", "makepanda/makepackage.py",
+    "--verbose",
+    "--version", Property("version"),
+    "--outputdir", outputdir,
+]
+
 build_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
@@ -109,7 +117,6 @@ build_steps += whl_version_steps
 for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename32 = get_whl_filename(abi, 'i386')
     whl_filename64 = get_whl_filename(abi, 'x86_64')
-    dmg_filename = get_dmg_filename(abi)
 
     build_steps += [
         # Run makepanda - give it enough timeout (1h)
@@ -137,14 +144,19 @@ for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'
         FileUpload(name="upload x86_64 "+abi, slavesrc=whl_filename64,
                    masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename64),
                    mode=0o664, haltOnFailure=True),
-        FileUpload(name="upload dmg "+abi, slavesrc=dmg_filename,
-                   masterdest=get_dmg_upload_filename(abi),
-                   mode=0o664, haltOnFailure=True),
 
         # Now delete them.
-        ShellCommand(name="rm "+abi, command=['rm', whl_filename32, whl_filename64, dmg_filename], haltOnFailure=False),
+        ShellCommand(name="rm "+abi, command=['rm', whl_filename32, whl_filename64], haltOnFailure=False),
     ]
 
+# Build and upload the installer.
+build_steps += [
+    ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
+
+    FileUpload(name="upload dmg", slavesrc=get_dmg_filename(),
+               masterdest=get_dmg_upload_filename(),
+               mode=0o664, haltOnFailure=True),
+]
 
 sdk_factory = BuildFactory()
 for step in build_steps:
