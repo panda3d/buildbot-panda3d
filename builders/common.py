@@ -105,7 +105,7 @@ def whl_version(props):
     if props["revision"] == "v" + props["version"]:
         # We requested building a particular version tag, so this must be a
         # release.
-        return props["version"] + "+opt" if optimize else ""
+        return props["version"] + ("+opt" if optimize else "")
 
     version = tuple(map(int, props["version"].split('.')))
 
