@@ -207,11 +207,6 @@ def common_flags(props):
         flags.append("--host=https://runtime.panda3d.org/")
 
     elif buildtype == "sdk":
-        # Only build the .p3d deployment tools on a branch that's already
-        # had a release.  Bit of a hacky way to determine that.
-        major_version = '.'.join(props["version"].split('.', 2)[:2])
-        if props.getProperty("commit-description", "").startswith('v' + major_version + '.'):
-            flags.append("--host=https://runtime.panda3d.org/")
         if props.getProperty("optimize"):
             flags += ["--optimize=4"]
 
