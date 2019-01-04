@@ -266,7 +266,7 @@ build_steps = [
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
 
     # And the test scripts for deploy-ng.
-    Test(name="build_samples", command=test_deployng_cmd, doStepIf=is_branch("deploy-ng"), haltOnFailure=True),
+    #Test(name="build_samples", command=test_deployng_cmd, doStepIf=is_branch("deploy-ng"), haltOnFailure=True),
 ]
 
 # Define a global lock, since reprepro won't allow simultaneous access to the repo.
