@@ -40,8 +40,8 @@ def get_dmg_upload_filename(abi=None):
     if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3])
 
-    return Interpolate("%s/Panda3D-SDK-%s-MacOSX%s%s.dmg",
-        common.upload_dir, dmg_version, Property("osxtarget"), suffix)
+    return Interpolate("%s/Panda3D-SDK-%s%s.dmg",
+        common.upload_dir, dmg_version, suffix)
 
 
 @renderer
