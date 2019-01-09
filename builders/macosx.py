@@ -45,8 +45,17 @@ def get_dmg_upload_filename(abi=None):
 
 
 @renderer
+def osxtarget(props):
+    version = props["version"]
+    if version.startswith("1.9.") or version.startswith("1.10."):
+        return "10.6"
+    else:
+        return "10.7"
+
+
+@renderer
 def platform_prefix(props):
-    osxver = props["osxtarget"].replace('.', '_')
+    osxver = osxtarget.getRenderingFor(props)
     return "macosx_" + osxver
 
 
@@ -74,7 +83,7 @@ def get_build_command(abi):
         "--everything",
         "--outputdir", outputdir,
         common_flags, "--universal",
-        "--osxtarget", Property("osxtarget"),
+        "--osxtarget", osxtarget,
         "--no-gles", "--no-gles2", "--no-egl",
         "--version", Property("version"),
     ]
@@ -93,7 +102,7 @@ def get_makewheel_command(abi, arch):
         "makepanda/makewheel.py",
         "--outputdir", outputdir,
         "--version", whl_version,
-        "--platform", Interpolate("macosx-%(prop:osxtarget)s-" + arch),
+        "--platform", Interpolate("macosx-%s-%s", osxtarget, arch),
         "--verbose",
     ]
 
@@ -166,11 +175,8 @@ for step in build_steps:
     sdk_factory.addStep(step)
 
 
-def macosx_builder(osxver):
-    name = 'sdk-macosx' + osxver
-    factory = sdk_factory
-
-    return BuilderConfig(name=name,
+def macosx_builder():
+    return BuilderConfig(name='macosx',
                          slavenames=config.macosx_slaves,
                          factory=sdk_factory,
-                         properties={"osxtarget": osxver, "buildtype": "sdk"})
+                         properties={"buildtype": "sdk"})
