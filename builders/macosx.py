@@ -58,10 +58,13 @@ def get_whl_filename(abi, arch):
 
 @renderer
 def outputdir(props):
+    version = props["version"].split('.')
+    dir = 'built{0}.{1}'.format(*version)
+
     if props.getProperty("optimize", False):
-        return ['built-opt']
-    else:
-        return ['built']
+        dir = '-opt'
+
+    return [dir]
 
 
 def get_build_command(abi):
