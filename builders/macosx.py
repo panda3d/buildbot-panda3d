@@ -56,7 +56,7 @@ def osxtarget(props):
 @renderer
 def platform_prefix(props):
     osxver = osxtarget.getRenderingFor(props)
-    return "macosx_" + osxver
+    return "macosx_" + osxver.replace('.', '_')
 
 
 def get_whl_filename(abi, arch):
