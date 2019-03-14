@@ -263,7 +263,8 @@ build_steps = [
     Test(name="test py3", command=get_test_command(3), haltOnFailure=True),
 
     # Build the installer.
-    ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
+    ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
+                 doStepIf=lambda step:not step.getProperty("optimize", False)),
 
     # And the test scripts for deploy-ng.
     #Test(name="build_samples", command=test_deployng_cmd, doStepIf=is_branch("deploy-ng"), haltOnFailure=True),
@@ -276,7 +277,8 @@ repo_lock = MasterLock('reprepro')
 publish_deb_steps = [
     # Upload the deb package.
     FileUpload(slavesrc=deb_filename, masterdest=deb_upload_filename,
-               mode=0o664, haltOnFailure=True),
+               mode=0o664, haltOnFailure=True,
+               doStepIf=lambda step:not step.getProperty("optimize", False)),
 
     # Create a torrent file and start seeding it.
     #MakeTorrent(deb_upload_filename),
@@ -285,7 +287,8 @@ publish_deb_steps = [
     # Upload it to an apt repository.
     MasterShellCommand(name="reprepro", command=[
         "reprepro", "-b", deb_archive_dir, "includedeb", deb_archive_suite,
-        deb_upload_filename], locks=[repo_lock.access('exclusive')]),
+        deb_upload_filename], locks=[repo_lock.access('exclusive')],
+        doStepIf=lambda step:not step.getProperty("optimize", False)),
 ]
 
 # Now make the factories.
