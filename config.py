@@ -38,6 +38,7 @@ sdk_excludes = [
     "/LICENSE",
     "README",
     "README.*",
+    "BACKERS.*",
     "*.pl",
     "*.vcproj",
     "*.sln",
