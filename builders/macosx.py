@@ -71,7 +71,7 @@ def outputdir(props):
     dir = 'built{0}.{1}'.format(*version)
 
     if props.getProperty("optimize", False):
-        dir = '-opt'
+        dir += '-opt'
 
     return [dir]
 
