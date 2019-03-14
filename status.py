@@ -2,10 +2,10 @@ __all__ = ["www_status", "irc_status"]
 
 from buildbot.status import html, words
 from buildbot.status.web import authz, auth
-from config import users
+import config
 
 authz_cfg = authz.Authz(
-    auth=auth.BasicAuth(users),
+    auth=auth.BasicAuth(config.users),
     gracefulShutdown=False,
     forceBuild='auth',
     forceAllBuilds='auth',
@@ -17,8 +17,8 @@ authz_cfg = authz.Authz(
 www_status = html.WebStatus(http_port=8010, authz=authz_cfg,
                             change_hook_dialects={'github': True})
 
-irc_status = words.IRC(host="irc.freenode.net", nick="p3dbuildbot",
-                       channels=["#panda3d"], notify_events={
+irc_status = words.IRC(host=config.irc_host, nick=config.irc_nick,
+                       channels=config.irc_channels, notify_events={
                            'exception': False,
                            'failureToSuccess': True,
                            'successToFailure': True})

@@ -30,6 +30,11 @@ runtime_dir = "/var/www/html/runtime-dev.panda3d.org"
 # Location of a copy of pmerge that can be run on the master.
 pmerge_bin = "/var/www/html/runtime.panda3d.org/pmerge.p3d"
 
+# IRC settings
+irc_host = "irc.freenode.net"
+irc_nick = "p3dbuildbot"
+irc_channels = ["#panda3d-devel"]
+
 # Files that, when changed, should not trigger an automatic SDK rebuild.
 # Paths starting with a forward slash are relative to the filesystem root.
 sdk_excludes = [
