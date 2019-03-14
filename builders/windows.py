@@ -92,6 +92,17 @@ def outputdir(props):
     return [dir]
 
 
+@renderer
+def outputdir_cp34(props):
+    version = props["version"].split('.')
+    dir = 'built{0}.{1}-cp34'.format(*version)
+
+    if props.getProperty("optimize", False):
+        dir += '-opt'
+
+    return [dir]
+
+
 def get_build_command(abi, copy_python=False):
     command = [
         get_python_executable(abi),
@@ -100,11 +111,15 @@ def get_build_command(abi, copy_python=False):
         "--outputdir", outputdir,
         "--no-touchinput",
         common_flags,
-        "--outputdir", outputdir,
         "--arch", Property("arch"),
         "--version", whl_version,
         "--wheel",
     ]
+    if abi == 'cp34-cp34m':
+        command += ["--outputdir", outputdir_cp34]
+    else:
+        command += ["--outputdir", outputdir]
+
     if not copy_python:
         command += ["--no-copy-python"]
     return command
@@ -141,7 +156,7 @@ build_steps = [
 
 build_steps += whl_version_steps
 
-for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
+for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
     whl_filename = get_whl_filename(abi)
     copy_python = (abi == 'cp37-cp37m')
 
