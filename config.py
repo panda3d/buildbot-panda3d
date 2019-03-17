@@ -16,19 +16,19 @@ title_url = "https://www.panda3d.org/"
 buildbot_url = "http://buildbot.panda3d.org/"
 
 # Location on the server where the builds are to be uploaded.
-downloads_dir = "/var/www/html/buildbot.panda3d.org/downloads"
+downloads_dir = "/srv/www/html/buildbot.panda3d.org/downloads"
 
 # Location where the .deb archives are hosted in an apt repository.
-archive_dir = "/var/www/html/archive.panda3d.org"
+archive_dir = "/srv/www/html/archive.panda3d.org"
 
 # Where the rtdist builds are uploaded before being pmerged.
 staging_dir = "/home/panda3d-bot/staging-tmp"
 
 # Location on the server into which the rtdist packages should be merged.
-runtime_dir = "/var/www/html/runtime-dev.panda3d.org"
+runtime_dir = "/srv/www/html/runtime-dev.panda3d.org"
 
 # Location of a copy of pmerge that can be run on the master.
-pmerge_bin = "/var/www/html/runtime.panda3d.org/pmerge.p3d"
+pmerge_bin = "/srv/www/html/runtime.panda3d.org/pmerge.p3d"
 
 # IRC settings
 irc_host = "irc.freenode.net"
