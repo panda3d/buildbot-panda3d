@@ -15,14 +15,18 @@ import config
 from .common import common_flags, whl_version_steps, whl_version
 from . import common
 
+
 @renderer
 def built_dir(props):
     "Returns the name of the build directory to use."
 
+    version = props["version"].split('.')
+    dir = 'built{0}.{1}'.format(*version)
+
     if props.getProperty("optimize", False):
-        return "built-opt"
-    else:
-        return "built"
+        dir += '-opt'
+
+    return dir
 
 @renderer
 def setarch(props):
