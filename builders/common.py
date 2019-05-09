@@ -158,7 +158,7 @@ def outputdir(props):
     if props.getProperty("optimize", False):
         dir += '-opt'
 
-    return [dir]
+    return dir
 
 
 @renderer
