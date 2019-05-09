@@ -151,6 +151,17 @@ def whl_version(props):
 
 
 @renderer
+def outputdir(props):
+    version = props["version"].split('.')
+    dir = 'built{0}.{1}'.format(*version)
+
+    if props.getProperty("optimize", False):
+        dir += '-opt'
+
+    return [dir]
+
+
+@renderer
 def platform_under(props):
     "Returns the platform string with an underscore."
 

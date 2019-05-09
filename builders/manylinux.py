@@ -17,18 +17,6 @@ from . import common
 
 
 @renderer
-def built_dir(props):
-    "Returns the name of the build directory to use."
-
-    version = props["version"].split('.')
-    dir = 'built{0}.{1}'.format(*version)
-
-    if props.getProperty("optimize", False):
-        dir += '-opt'
-
-    return dir
-
-@renderer
 def setarch(props):
     "Returns the appropriate setarch command if needed."
 
@@ -56,7 +44,7 @@ def get_build_command(abi):
         "--python-incdir=/opt/python/%s/include" % (abi),
         "--python-libdir=/opt/python/%s/lib" % (abi),
         common_flags,
-        "--outputdir", built_dir,
+        "--outputdir", common.outputdir,
         "--wheel", "--version", whl_version,
     ]
 

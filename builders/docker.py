@@ -30,6 +30,8 @@ import os.path
 
 import config
 from .common import common_flags, buildtype_flag, whl_version_steps, publish_rtdist_steps, MakeTorrent, SeedTorrent, is_branch
+from . import common
+
 
 @renderer
 def upstream_version(props):
@@ -174,7 +176,7 @@ def get_build_command(ver):
         common_flags, dist_flags,
         "--debversion", debian_version,
         "--version", Property("version"),
-        "--outputdir", "built",
+        "--outputdir", common.outputdir,
     ]
 
 
@@ -184,8 +186,8 @@ def get_test_command(ver):
         "-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
         "-w", "/build/",
-        "-e", "PYTHONPATH=/build/built",
-        "-e", "LD_LIBRARY_PATH=/build/built/lib",
+        "-e", Interpolate("PYTHONPATH=/build/%s", common.outputdir),
+        "-e", Interpolate("LD_LIBRARY_PATH=/build/%s/lib", common.outputdir),
         Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
         setarch,
@@ -206,7 +208,7 @@ package_cmd = [
     "--verbose",
     "--debversion", debian_version,
     "--version", Property("version"),
-    "--outputdir=built",
+    "--outputdir", common.outputdir,
 ]
 
 
@@ -216,9 +218,9 @@ test_deployng_cmd = [
     "-i", Interpolate("--name=%(prop:buildername)s"),
     "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
     "-w", "/build/",
-    "-e", "PYTHONPATH=/build/built",
-    "-e", "LD_LIBRARY_PATH=/build/built/lib",
-    "-e", "PATH=/build/built/bin",
+    "-e", Interpolate("PYTHONPATH=/build/%s", common.outputdir),
+    "-e", Interpolate("LD_LIBRARY_PATH=/build/%s/lib", common.outputdir),
+    "-e", Interpolate("PATH=/build/%s/bin", common.outputdir),
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
     setarch,
