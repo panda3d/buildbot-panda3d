@@ -74,7 +74,7 @@ sdk_excludes = [
 
 # List of slave names for each platform.
 linux_slaves = ["build-lnx"]
-windows_slaves = ["build-win"]
+windows_slaves = ["build-win2"]
 macosx_slaves = ["build-osx"]
 
 # These files contain metadata (incl. passwords) of the slaves and users.
