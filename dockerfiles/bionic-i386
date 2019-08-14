@@ -26,10 +26,12 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN echo "deb http://archive.ubuntu.com/ubuntu bionic main universe multiverse" > /etc/apt/sources.list
 RUN echo "deb http://archive.ubuntu.com/ubuntu bionic-security main universe multiverse" >> /etc/apt/sources.list
 RUN echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main universe multiverse" >> /etc/apt/sources.list
-RUN echo "deb http://ppa.launchpad.net/panda3d/ppa/ubuntu bionic main" >> /etc/apt/sources.list
 
-RUN apt-get -y --force-yes --no-install-recommends install dirmngr gnupg && \
+RUN apt-get update && \
+    apt-get -y --force-yes --no-install-recommends install dirmngr gnupg && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BCD3D563A258828C
+
+RUN echo "deb http://ppa.launchpad.net/panda3d/ppa/ubuntu bionic main" >> /etc/apt/sources.list
 
 RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
     pkg-config bison flex build-essential fakeroot python-dev \
