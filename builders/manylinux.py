@@ -97,7 +97,7 @@ build_steps = [
     ShellCommand(name="setup", command=setup_cmd, workdir="manylinux", haltOnFailure=True),
 ]
 
-for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
+for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename = common.get_whl_filename(abi)
     build_steps += [
         # Invoke makepanda and makewheel.
