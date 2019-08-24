@@ -62,7 +62,13 @@ def refspec(props):
     # Needs to be fixed if we ever request building 2.0.0, probably by picking
     # the point at which 2.0 branched off.
     version = list(map(int, props["version"].split('.')))
-    if version[2] > 0:
+    if len(version) > 3:
+        # Measure since the last patch release.
+        if version[3] > 1:
+            version[3] -= 1
+        else:
+            version.pop()
+    elif version[2] > 0:
         # Measure since the last minor release.
         version[2] -= 1
     else:
@@ -77,7 +83,7 @@ def refspec(props):
         # we encode further revisions via the local version tag.
         base = props["merge-base"]
 
-    return "v{0}.{1}.{2}..{3}".format(version[0], version[1], version[2], base)
+    return "v{0}..{1}".format(".".join([str(v) for v in version]), base)
 
 def is_branched(step):
     "Returns true if we are not on the master or on a release branch."
@@ -134,7 +140,7 @@ def whl_version(props):
     if "commit-description" in props:
         desc = props["commit-description"].split('-')
 
-        if desc[0] == "v{0}.{1}.{2}".format(*version):
+        if desc[0] == "v" + props["version"]:
             if len(desc) == 1:
                 # This is exactly this release.
                 if optimize:

@@ -55,7 +55,7 @@ def upstream_version(props):
     if "commit-description" in props:
         desc = props["commit-description"].split('-')
 
-        if desc[0] == "v{0}.{1}.{2}".format(*version):
+        if desc[0] == "v" + props["version"]:
             if len(desc) == 1:
                 # This is exactly this release.
                 return props["version"]
