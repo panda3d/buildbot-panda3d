@@ -50,7 +50,7 @@ def osxtarget(props):
     if version.startswith("1.9.") or version.startswith("1.10."):
         return "10.6"
     else:
-        return "10.7"
+        return "10.9"
 
 
 @renderer
