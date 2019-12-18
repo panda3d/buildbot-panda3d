@@ -2,6 +2,7 @@ __all__ = ["www_status", "irc_status"]
 
 from buildbot.status import html, words
 from buildbot.status.web import authz, auth
+from buildbot.status.status_push import HttpStatusPush
 import config
 
 authz_cfg = authz.Authz(
@@ -22,6 +23,8 @@ irc_status = words.IRC(host=config.irc_host, nick=config.irc_nick,
                            'exception': False,
                            'failureToSuccess': True,
                            'successToFailure': True})
+
+webhook_status = HttpStatusPush(serverUrl=config.webhook_url)
 
 # Fix the stupid github hook... I submitted a patch to buildbot for this.
 # This should be fixed in buildbot 0.8.11.

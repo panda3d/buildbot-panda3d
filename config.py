@@ -13,7 +13,10 @@ git_url = "git://github.com/panda3d/panda3d.git"
 title_url = "https://www.panda3d.org/"
 
 # Link to the buildbot status page.
-buildbot_url = "http://buildbot.panda3d.org/"
+buildbot_url = "https://buildbot.panda3d.org/"
+
+# Link to webhook.
+webhook_url = "https://www.panda3d.org/webhooks/buildbot.php"
 
 # Location on the server where the builds are to be uploaded.
 downloads_dir = "/srv/www/html/buildbot.panda3d.org/downloads"
