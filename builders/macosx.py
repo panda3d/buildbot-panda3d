@@ -15,42 +15,52 @@ from .common import MakeTorrent, SeedTorrent
 from . import common
 
 
-def get_dmg_filename(abi=None):
+def get_dmg_filename():
     "Determines the name of a .dmg file produced by makepanda."
 
-    suffix = ""
-    if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3])
-
-    return Interpolate("Panda3D-%(prop:version)s" + suffix + ".dmg")
+    return Interpolate("Panda3D-%(prop:version)s.dmg")
 
 
 @renderer
 def dmg_version(props):
-    if props["revision"].startswith("v"):
-        return props["version"]
-    else:
-        return "%s-%s" % (props["version"], props["got_revision"][:7])
+    version = props["version"]
+    if not props["revision"].startswith("v"):
+        version += "-" + props["got_revision"][:7]
+
+    if version.startswith("1.9.") or version.startswith("1.10."):
+        osxver = osxtarget.getRenderingFor(props)
+        version += '-MacOSX' + osxver
+
+    return version
 
 
-def get_dmg_upload_filename(abi=None):
+def get_dmg_upload_filename():
     "Determines the upload location of an .dmg file on the master."
 
-    suffix = ""
-    if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3])
-
-    return Interpolate("%s/Panda3D-SDK-%s%s.dmg",
-        common.upload_dir, dmg_version, suffix)
+    return Interpolate("%s/Panda3D-SDK-%s.dmg",
+        common.upload_dir, dmg_version)
 
 
 @renderer
 def osxtarget(props):
+    osxver = props.getProperty("osxtarget", None)
+    if osxver is not None:
+        return osxver
+
     version = props["version"]
     if version.startswith("1.9.") or version.startswith("1.10."):
         return "10.6"
     else:
         return "10.9"
+
+
+@renderer
+def universal_flag(props):
+    osxver = osxtarget.getRenderingFor(props)
+    if osxver == "10.6":
+        return ["--universal"]
+    else:
+        return []
 
 
 @renderer
@@ -76,28 +86,38 @@ def outputdir(props):
     return [dir]
 
 
-def get_build_command(abi):
-    return [
+def get_build_step(abi):
+    command = [
         "/usr/local/bin/python%s.%s" % (abi[2], abi[3]),
         "makepanda/makepanda.py",
         "--everything",
         "--outputdir", outputdir,
-        common_flags, "--universal",
+        common_flags, universal_flag,
         "--osxtarget", osxtarget,
         "--no-gles", "--no-gles2", "--no-egl",
         "--version", Property("version"),
     ]
 
+    # Run makepanda - give it enough timeout (1h)
+    s = Compile(name='compile '+abi, command=command, timeout=1*60*60,
+                env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
+                     "MAKEPANDA_SDKS": "/Users/buildbot/sdks"}, haltOnFailure=True)
+    return s
 
-def get_test_command(abi):
-    return [
+
+def get_test_step(abi):
+    # Run the test suite.
+    command = [
         "/usr/local/bin/python%s.%s" % (abi[2], abi[3]),
         "-B", "-m", "pytest", "tests",
     ]
+    test = Test(name='test '+abi, command=command,
+                env={"PYTHONPATH": outputdir}, haltOnFailure=True)
+    return test
 
 
-def get_makewheel_command(abi, arch):
-    return [
+def get_makewheel_step(abi, arch):
+    command = [
         "/usr/local/bin/python%s.%s" % (abi[2], abi[3]),
         "makepanda/makewheel.py",
         "--outputdir", outputdir,
@@ -105,6 +125,15 @@ def get_makewheel_command(abi, arch):
         "--platform", Interpolate("macosx-%s-%s", osxtarget, arch),
         "--verbose",
     ]
+
+    return ShellCommand(name="makewheel " + arch + " " + abi,
+                        command=command, haltOnFailure=True)
+
+def get_upload_step(name, file):
+    return FileUpload(
+        name=name, slavesrc=file,
+        masterdest=Interpolate("%s/%s", common.upload_dir, file),
+        mode=0o664, haltOnFailure=True)
 
 
 # The command used to create the .dmg installer.
@@ -125,58 +154,64 @@ build_steps = [
 ]
 
 build_steps += whl_version_steps
+build_steps_10_6 = build_steps[:]
+build_steps_10_9 = build_steps[:]
 
 for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename32 = get_whl_filename(abi, 'i386')
     whl_filename64 = get_whl_filename(abi, 'x86_64')
 
-    build_steps += [
-        # Run makepanda - give it enough timeout (1h)
-        Compile(name='compile '+abi, command=get_build_command(abi), timeout=1*60*60,
-                env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
-                     "MAKEPANDA_SDKS": "/Users/buildbot/sdks"}, haltOnFailure=True),
-
-        # Run the test suite.
-        Test(name='test '+abi, command=get_test_command(abi),
-             env={"PYTHONPATH": outputdir}, haltOnFailure=True),
+    build_steps_10_6 += [
+        get_build_step(abi),
+        get_test_step(abi),
 
         # Build two wheels: one for 32-bit, the other for 64-bit.
         # makewheel is clever enough to use "lipo" to extract the right arch.
-        ShellCommand(name="makewheel i386 "+abi,
-                     command=get_makewheel_command(abi, 'i386'),
-                     haltOnFailure=True),
-
-        ShellCommand(name="makewheel x86_64 "+abi,
-                     command=get_makewheel_command(abi, 'x86_64'),
-                     haltOnFailure=True),
-
-        FileUpload(name="upload i386 "+abi, slavesrc=whl_filename32,
-                   masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename32),
-                   mode=0o664, haltOnFailure=True),
-        FileUpload(name="upload x86_64 "+abi, slavesrc=whl_filename64,
-                   masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename64),
-                   mode=0o664, haltOnFailure=True),
+        get_makewheel_step(abi, 'i386'),
+        get_makewheel_step(abi, 'x86_64'),
+        get_upload_step("upload i386 "+abi, whl_filename32),
+        get_upload_step("upload x86_64 "+abi, whl_filename64),
 
         # Now delete them.
         ShellCommand(name="rm "+abi, command=['rm', whl_filename32, whl_filename64], haltOnFailure=False),
     ]
 
+for abi in ('cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
+    whl_filename64 = get_whl_filename(abi, 'x86_64')
+
+    build_steps_10_9 += [
+        get_build_step(abi),
+        get_test_step(abi),
+        get_makewheel_step(abi, 'x86_64'),
+        get_upload_step("upload x86_64 "+abi, whl_filename64),
+        ShellCommand(name="rm "+abi, command=['rm', whl_filename64], haltOnFailure=False),
+    ]
+
 # Build and upload the installer.
-build_steps += [
+package_steps = [
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
 
     FileUpload(name="upload dmg", slavesrc=get_dmg_filename(),
                masterdest=get_dmg_upload_filename(),
                mode=0o664, haltOnFailure=True),
 ]
-
-sdk_factory = BuildFactory()
-for step in build_steps:
-    sdk_factory.addStep(step)
+build_steps_10_6 += package_steps
+build_steps_10_9 += package_steps
 
 
-def macosx_builder():
-    return BuilderConfig(name='macosx',
-                         slavenames=config.macosx_slaves,
-                         factory=sdk_factory,
-                         properties={"buildtype": "sdk"})
+def macosx_builder(osxver):
+    if osxver in ('10.6', '10.7', '10.8'):
+        slavenames = config.macosx_10_6_slaves
+        buildsteps = build_steps_10_6
+    else:
+        slavenames = config.macosx_10_9_slaves
+        buildsteps = build_steps_10_9
+
+    factory = BuildFactory()
+    for step in buildsteps:
+        factory.addStep(step)
+
+    return BuilderConfig(name='macosx' + ('-' + osxver if osxver else ''),
+                         slavenames=slavenames,
+                         factory=factory,
+                         properties={"osxtarget": osxver, "buildtype": "sdk"})
