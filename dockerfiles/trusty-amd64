@@ -40,7 +40,7 @@ RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
     libassimp-dev libbullet-dev libopenexr-dev libopusfile-dev \
     cmake3 unzip git ca-certificates python3-dev
 
-ADD https://bootstrap.pypa.io/get-pip.py /root/get-pip.py
+ADD https://bootstrap.pypa.io/3.4/get-pip.py /root/get-pip.py
 RUN cd /root && python get-pip.py && python3 get-pip.py
 RUN python -m pip install pytest && python3 -m pip install pytest
 
