@@ -21,8 +21,10 @@ CMD ["/bin/bash"]
 # Begin Panda3D section
 #
 
+# Install some dependencies we'll need later
+RUN yum -y install wget alsa-lib-devel xz tk
+
 # Install more recent yasm for ffmpeg compilation
-RUN yum -y install wget
 RUN wget http://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el5/en/x86_64/rpmforge/RPMS/yasm-1.1.0-1.el5.rf.x86_64.rpm && \
     yum -y --nogpgcheck install yasm-1.1.0-1.el5.rf.x86_64.rpm
 
@@ -42,9 +44,6 @@ RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.
     cp -r pulseaudio-9.0/src/pulse/*.h /usr/local/include/pulse/ && \
     touch /usr/lib64/libpulse.so
 
-# Install library needed for building ALSA in OpenAL Soft
-RUN yum -y install alsa-lib-devel
-
 # Build thirdparty libraries
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
@@ -52,4 +51,15 @@ RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
 RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake .. && make VERBOSE=1
 
 # Extra Packages for Panda3D
-RUN yum -y install tk gtk2-devel
+RUN yum -y install gtk2-devel
+
+# Install more recent version of libX11
+RUN cd /root && \
+    curl -O http://mirror.centos.org/centos/6/os/x86_64/Packages/libX11-devel-1.6.4-3.el6.x86_64.rpm && \
+    curl -O http://mirror.centos.org/centos/6/os/x86_64/Packages/libX11-1.6.4-3.el6.x86_64.rpm && \
+    curl -O http://mirror.centos.org/centos/6/os/x86_64/Packages/xorg-x11-proto-devel-7.7-14.el6.noarch.rpm
+
+RUN cd / && \
+    rpm2cpio /root/libX11-devel-1.6.4-3.el6.x86_64.rpm | xz -d | cpio -idmvu && \
+    rpm2cpio /root/libX11-1.6.4-3.el6.x86_64.rpm | xz -d | cpio -idmvu && \
+    rpm2cpio /root/xorg-x11-proto-devel-7.7-14.el6.noarch.rpm | xz -d | cpio -idmvu
