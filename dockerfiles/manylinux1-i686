@@ -34,7 +34,7 @@ RUN linux32 /opt/python/cp27-cp27m/bin/pip install virtualenv && \
     linux32 /opt/python/cp27-cp27mu/bin/pip install virtualenv
 
 # Install latest cmake version via pip
-RUN /opt/python/cp36-cp36m/bin/pip install cmake && \
+RUN /opt/python/cp36-cp36m/bin/pip install --prefer-binary cmake && \
     ln -s /opt/python/cp36-cp36m/bin/cmake /usr/local/bin/cmake && \
     cmake --version
 
