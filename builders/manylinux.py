@@ -12,7 +12,7 @@ from buildbot.steps.transfer import FileDownload, FileUpload
 from buildbot.config import BuilderConfig
 
 import config
-from .common import common_flags, whl_version_steps, whl_version
+from .common import common_flags, whl_version_steps, whl_version, is_branch
 from . import common
 
 
@@ -99,20 +99,28 @@ build_steps = [
 
 for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename = common.get_whl_filename(abi)
+
+    do_step = True
+    if abi == 'cp34-cp34m':
+        do_step = is_branch('release/1.10.x')
+
     build_steps += [
         # Invoke makepanda and makewheel.
-        Compile(name="compile "+abi, command=get_build_command(abi), haltOnFailure=True),
+        Compile(name="compile "+abi, command=get_build_command(abi),
+                haltOnFailure=True, doStepIf=do_step),
 
         # Run the test suite in a virtualenv.
-        Test(name="test "+abi, command=get_test_command(abi, whl_filename), haltOnFailure=True),
+        Test(name="test "+abi, command=get_test_command(abi, whl_filename),
+             haltOnFailure=True, doStepIf=do_step),
 
         # Upload the wheel file.
         FileUpload(name="upload "+abi, slavesrc=whl_filename,
                    masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
-                   mode=0o664, haltOnFailure=True),
+                   mode=0o664, haltOnFailure=True, doStepIf=do_step),
 
         # Now delete it.
-        ShellCommand(name="rm "+abi, command=['rm', whl_filename], haltOnFailure=False),
+        ShellCommand(name="rm "+abi, command=['rm', whl_filename],
+                     haltOnFailure=False, doStepIf=do_step),
     ]
 
 manylinux_factory = BuildFactory()

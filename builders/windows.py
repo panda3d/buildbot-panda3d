@@ -9,7 +9,7 @@ from buildbot.steps.slave import RemoveDirectory
 from buildbot.config import BuilderConfig
 
 import config
-from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, get_whl_filename, publish_rtdist_steps
+from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, get_whl_filename, publish_rtdist_steps, is_branch
 from .common import MakeTorrent, SeedTorrent
 from . import common
 
@@ -160,27 +160,32 @@ for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m',
     whl_filename = get_whl_filename(abi)
     copy_python = (abi == 'cp37-cp37m')
 
+    do_step = True
+    if abi == 'cp34-cp34m':
+        do_step = is_branch('release/1.10.x')
+
     build_steps += [
         # Run makepanda. Give it enough timeout (6h) since some steps take ages
         Compile(name="compile "+abi, timeout=6*60*60,
                 command=get_build_command(abi, copy_python=copy_python),
                 env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
-                     "MAKEPANDA_SDKS": "C:\\sdks"}, haltOnFailure=True),
+                     "MAKEPANDA_SDKS": "C:\\sdks"},
+                haltOnFailure=True, doStepIf=do_step),
 
         # Run the test suite, but in a virtualenv.
         Test(name="test "+abi,
              command=get_test_command(abi, whl_filename),
-             haltOnFailure=True),
+             haltOnFailure=True, doStepIf=do_step),
 
         # Upload the wheel.
         FileUpload(name="upload whl "+abi, slavesrc=whl_filename,
                    masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
-                   mode=0o664, haltOnFailure=True),
+                   mode=0o664, haltOnFailure=True, doStepIf=do_step),
 
         # Clean up the created files.
         ShellCommand(name="del "+abi,
                      command=["del", "/Q", whl_filename],
-                     haltOnFailure=False),
+                     haltOnFailure=False, doStepIf=do_step),
     ]
 
 # Build and upload the installer.

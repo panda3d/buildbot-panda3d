@@ -10,7 +10,7 @@ from buildbot.steps.slave import RemoveDirectory
 from buildbot.config import BuilderConfig
 
 import config
-from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, publish_rtdist_steps
+from .common import common_flags, buildtype_flag, whl_version_steps, whl_version, publish_rtdist_steps, is_branch
 from .common import MakeTorrent, SeedTorrent
 from . import common
 
@@ -98,10 +98,15 @@ def get_build_step(abi):
         "--version", Property("version"),
     ]
 
+    do_step = True
+    if abi == 'cp34-cp34m':
+        do_step = is_branch('release/1.10.x')
+
     # Run makepanda - give it enough timeout (1h)
     s = Compile(name='compile '+abi, command=command, timeout=1*60*60,
                 env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
-                     "MAKEPANDA_SDKS": "/Users/buildbot/sdks"}, haltOnFailure=True)
+                     "MAKEPANDA_SDKS": "/Users/buildbot/sdks"},
+                haltOnFailure=True, doStepIf=do_step)
     return s
 
 
@@ -111,8 +116,14 @@ def get_test_step(abi):
         "/usr/local/bin/python%s.%s" % (abi[2], abi[3]),
         "-B", "-m", "pytest", "tests",
     ]
+
+    do_step = True
+    if abi == 'cp34-cp34m':
+        do_step = is_branch('release/1.10.x')
+
     test = Test(name='test '+abi, command=command,
-                env={"PYTHONPATH": outputdir}, haltOnFailure=True)
+                env={"PYTHONPATH": outputdir},
+                haltOnFailure=True, doStepIf=do_step)
     return test
 
 
@@ -126,14 +137,23 @@ def get_makewheel_step(abi, arch):
         "--verbose",
     ]
 
-    return ShellCommand(name="makewheel " + arch + " " + abi,
-                        command=command, haltOnFailure=True)
+    do_step = True
+    if abi == 'cp34-cp34m':
+        do_step = is_branch('release/1.10.x')
 
-def get_upload_step(name, file):
+    return ShellCommand(name="makewheel " + arch + " " + abi,
+                        command=command,
+                        haltOnFailure=True, doStepIf=do_step)
+
+def get_upload_step(abi, arch, file):
+    do_step = True
+    if abi == 'cp34-cp34m':
+        do_step = is_branch('release/1.10.x')
+
     return FileUpload(
-        name=name, slavesrc=file,
+        name="upload " + arch + " " + abi, slavesrc=file,
         masterdest=Interpolate("%s/%s", common.upload_dir, file),
-        mode=0o664, haltOnFailure=True)
+        mode=0o664, haltOnFailure=True, doStepIf=do_step)
 
 
 # The command used to create the .dmg installer.
@@ -169,21 +189,21 @@ for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'
         # makewheel is clever enough to use "lipo" to extract the right arch.
         get_makewheel_step(abi, 'i386'),
         get_makewheel_step(abi, 'x86_64'),
-        get_upload_step("upload i386 "+abi, whl_filename32),
-        get_upload_step("upload x86_64 "+abi, whl_filename64),
+        get_upload_step(abi, 'i386', whl_filename32),
+        get_upload_step(abi, 'x86_64', whl_filename64),
 
         # Now delete them.
-        ShellCommand(name="rm "+abi, command=['rm', whl_filename32, whl_filename64], haltOnFailure=False),
+        ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename32, whl_filename64], haltOnFailure=False),
     ]
 
-for abi in ('cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
+for abi in ('cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
     whl_filename64 = get_whl_filename(abi, 'x86_64')
 
     build_steps_10_9 += [
         get_build_step(abi),
         get_test_step(abi),
         get_makewheel_step(abi, 'x86_64'),
-        get_upload_step("upload x86_64 "+abi, whl_filename64),
+        get_upload_step(abi, 'x86_64', whl_filename64),
         ShellCommand(name="rm "+abi, command=['rm', whl_filename64], haltOnFailure=False),
     ]
 
