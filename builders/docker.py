@@ -128,14 +128,6 @@ def dist_flags(props):
         return []
 
 @renderer
-def python_path(props):
-    # Temporary hack
-    if "buildtype" in props and props["buildtype"] == "rtdist":
-        arch = props['arch']
-        return "/home/buildbot/rtdist_rocket/lib_%s/python2.7" % arch
-    return ""
-
-@renderer
 def setarch(props):
     if "arch" in props and props["arch"] != "amd64":
         return ["/usr/bin/setarch", props["arch"]]
@@ -254,14 +246,13 @@ build_steps = [
     Compile(name="compile py2",
             command=get_build_command(2),
             haltOnFailure=True,
-            env={'PYTHONPATH': python_path}),
+            doStepIf=is_branch("release/1.10.x")),
     Compile(name="compile py3",
             command=get_build_command(3),
-            haltOnFailure=True,
-            env={'PYTHONPATH': python_path}),
+            haltOnFailure=True),
 
     # Run the test suite.
-    Test(name="test py2", command=get_test_command(2), haltOnFailure=True),
+    Test(name="test py2", command=get_test_command(2), haltOnFailure=True, doStepIf=is_branch("release/1.10.x")),
     Test(name="test py3", command=get_test_command(3), haltOnFailure=True),
 
     # Build the installer.

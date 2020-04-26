@@ -101,7 +101,7 @@ for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m'
     whl_filename = common.get_whl_filename(abi)
 
     do_step = True
-    if abi == 'cp34-cp34m':
+    if abi in ('cp27-cp27mu', 'cp34-cp34m'):
         do_step = is_branch('release/1.10.x')
 
     build_steps += [
