@@ -137,7 +137,7 @@ def get_test_command(abi, whl_filename):
 # The command used to create the .exe installer.
 package_cmd = [
     # It doesn't matter what Python version we call this with.
-    get_python_executable("cp27-cp27m"),
+    get_python_executable("cp37-cp37m"),
     "makepanda\\makepackage.py",
     "--verbose", "--lzma",
     "--version", Property("version"),
@@ -149,7 +149,7 @@ build_steps = [
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        get_python_executable("cp27-cp27m"),
+        get_python_executable("cp37-cp37m"),
         "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
 ]

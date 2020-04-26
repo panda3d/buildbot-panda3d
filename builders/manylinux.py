@@ -79,7 +79,7 @@ build_steps = [
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        "python", "makepanda/getversion.py"],
+        "python3", "makepanda/getversion.py"],
         haltOnFailure=True),
 
     # Steps to figure out which .whl version to use.

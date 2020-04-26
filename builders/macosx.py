@@ -159,7 +159,7 @@ def get_upload_step(abi, arch, file):
 
 # The command used to create the .dmg installer.
 package_cmd = [
-    "python", "makepanda/makepackage.py",
+    "python3", "makepanda/makepackage.py",
     "--verbose",
     "--version", Property("version"),
     "--outputdir", outputdir,
@@ -170,7 +170,7 @@ build_steps = [
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        "python", "makepanda/getversion.py", buildtype_flag],
+        "python3", "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
 ]
 
@@ -205,7 +205,7 @@ for abi in ('cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m')
         get_test_step(abi),
         get_makewheel_step(abi, 'x86_64'),
         get_upload_step(abi, 'x86_64', whl_filename64),
-        ShellCommand(name="rm "+abi, command=['rm', whl_filename64], haltOnFailure=False),
+        ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename64], haltOnFailure=False),
     ]
 
 # Build and upload the installer.

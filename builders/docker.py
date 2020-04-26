@@ -196,7 +196,7 @@ package_cmd = [
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
     setarch,
-    "/usr/bin/python", "makepanda/makepackage.py",
+    "/usr/bin/python3", "makepanda/makepackage.py",
     "--verbose",
     "--debversion", debian_version,
     "--version", Property("version"),
@@ -216,7 +216,7 @@ test_deployng_cmd = [
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
     setarch,
-    "/usr/bin/python", "tests/build_samples.py"
+    "/usr/bin/python3", "tests/build_samples.py"
 ]
 
 changelog_msg = Interpolate("Automatic build %(prop:buildnumber)s by builder %(prop:buildername)s")
@@ -227,7 +227,7 @@ build_steps = [
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        "python", "makepanda/getversion.py", buildtype_flag],
+        "python3", "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
 
     # These steps fill in properties used to determine upstream_version.
