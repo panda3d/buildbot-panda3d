@@ -36,8 +36,8 @@ RUN linux32 /opt/python/cp27-cp27m/bin/pip install virtualenv && \
     linux32 /opt/python/cp27-cp27mu/bin/pip install virtualenv
 
 # Install latest cmake version via pip
-RUN /opt/python/cp36-cp36m/bin/pip install --prefer-binary cmake && \
-    ln -s /opt/python/cp36-cp36m/bin/cmake /usr/local/bin/cmake && \
+RUN /opt/python/cp37-cp37m/bin/pip install --prefer-binary cmake && \
+    ln -s /opt/python/cp37-cp37m/bin/cmake /usr/local/bin/cmake && \
     cmake --version
 
 # libpulse headers
@@ -51,7 +51,7 @@ RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake .. && linux32 make VERBOSE=1
+RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake .. && PATH=/opt/python/cp37-cp37m/bin:$PATH linux32 make VERBOSE=1
 
 # Install more recent version of libX11
 RUN cd /root && \
