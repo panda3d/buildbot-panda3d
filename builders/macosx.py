@@ -6,7 +6,7 @@ from buildbot.steps.source.git import Git
 from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileUpload
 from buildbot.steps.master import MasterShellCommand
-from buildbot.steps.slave import RemoveDirectory
+from buildbot.steps.worker import RemoveDirectory
 from buildbot.config import BuilderConfig
 
 import config
@@ -152,7 +152,7 @@ def get_upload_step(abi, arch, file):
         do_step = is_branch('release/1.10.x')
 
     return FileUpload(
-        name="upload " + arch + " " + abi, slavesrc=file,
+        name="upload " + arch + " " + abi, workersrc=file,
         masterdest=Interpolate("%s/%s", common.upload_dir, file),
         mode=0o664, haltOnFailure=True, doStepIf=do_step)
 
@@ -212,7 +212,7 @@ for abi in ('cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m')
 package_steps = [
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
 
-    FileUpload(name="upload dmg", slavesrc=get_dmg_filename(),
+    FileUpload(name="upload dmg", workersrc=get_dmg_filename(),
                masterdest=get_dmg_upload_filename(),
                mode=0o664, haltOnFailure=True),
 ]
@@ -222,10 +222,10 @@ build_steps_10_9 += package_steps
 
 def macosx_builder(osxver):
     if osxver in ('10.6', '10.7', '10.8'):
-        slavenames = config.macosx_10_6_slaves
+        workernames = config.macosx_10_6_workers
         buildsteps = build_steps_10_6
     else:
-        slavenames = config.macosx_10_9_slaves
+        workernames = config.macosx_10_9_workers
         buildsteps = build_steps_10_9
 
     factory = BuildFactory()
@@ -233,6 +233,6 @@ def macosx_builder(osxver):
         factory.addStep(step)
 
     return BuilderConfig(name='macosx' + ('-' + osxver if osxver else ''),
-                         slavenames=slavenames,
+                         workernames=workernames,
                          factory=factory,
                          properties={"osxtarget": osxver, "buildtype": "sdk"})

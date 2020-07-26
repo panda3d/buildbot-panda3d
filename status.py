@@ -1,34 +1,12 @@
-__all__ = ["www_status", "irc_status"]
+__all__ = []
 
-from buildbot.status import html, words
-from buildbot.status.web import authz, auth
-from buildbot.status.status_push import HttpStatusPush
+from buildbot.plugins import reporters
 import config
 
-authz_cfg = authz.Authz(
-    auth=auth.BasicAuth(config.users),
-    gracefulShutdown=False,
-    forceBuild='auth',
-    forceAllBuilds='auth',
-    pingBuilder='auth',
-    stopBuild='auth',
-    stopAllBuilds='auth',
-    cancelPendingBuild='auth')
+irc_status = reporters.IRC(host=config.irc_host, nick=config.irc_nick,
+                           channels=config.irc_channels, notify_events={
+                               'exception': False,
+                               'failureToSuccess': True,
+                               'successToFailure': True})
 
-www_status = html.WebStatus(http_port=8010, authz=authz_cfg,
-                            change_hook_dialects={'github': True})
-
-irc_status = words.IRC(host=config.irc_host, nick=config.irc_nick,
-                       channels=config.irc_channels, notify_events={
-                           'exception': False,
-                           'failureToSuccess': True,
-                           'successToFailure': True})
-
-webhook_status = HttpStatusPush(serverUrl=config.webhook_url)
-
-# Fix the stupid github hook... I submitted a patch to buildbot for this.
-# This should be fixed in buildbot 0.8.11.
-from buildbot.status.web.hooks import github
-import change_hook
-github.getChanges = change_hook.getChanges
-github.process_change = change_hook.process_change
+webhook_status = reporters.HttpStatusPush(config.webhook_url)

@@ -260,7 +260,7 @@ whl_version_steps = [
 # Steps to publish the rtdist.
 publish_rtdist_steps = [
     # Upload the stage directory.
-    DirectoryUpload(slavesrc="built/stage", masterdest=rtdist_staging_dir,
+    DirectoryUpload(workersrc="built/stage", masterdest=rtdist_staging_dir,
                     haltOnFailure=True),
 
     # Run pmerge.

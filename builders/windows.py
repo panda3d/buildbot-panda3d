@@ -5,7 +5,7 @@ from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
 from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileUpload
-from buildbot.steps.slave import RemoveDirectory
+from buildbot.steps.worker import RemoveDirectory
 from buildbot.config import BuilderConfig
 
 import config
@@ -178,7 +178,7 @@ for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m',
              haltOnFailure=True, doStepIf=do_step),
 
         # Upload the wheel.
-        FileUpload(name="upload whl "+abi, slavesrc=whl_filename,
+        FileUpload(name="upload whl "+abi, workersrc=whl_filename,
                    masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
                    mode=0o664, haltOnFailure=True, doStepIf=do_step),
 
@@ -194,11 +194,11 @@ build_steps += [
                  env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty"},
                  haltOnFailure=True),
 
-    FileUpload(name="upload exe", slavesrc=get_exe_filename(),
+    FileUpload(name="upload exe", workersrc=get_exe_filename(),
                masterdest=get_exe_upload_filename(),
                mode=0o664, haltOnFailure=True),
 
-    FileUpload(name="upload pdb", slavesrc=get_pdb_filename(),
+    FileUpload(name="upload pdb", workersrc=get_pdb_filename(),
                masterdest=get_pdb_upload_filename(),
                mode=0o664, haltOnFailure=True),
 ]
@@ -216,6 +216,6 @@ def windows_builder(arch):
         platform = "win32"
 
     return BuilderConfig(name='-'.join(("sdk", "windows", arch)),
-                         slavenames=config.windows_slaves,
+                         workernames=config.windows_workers,
                          factory=sdk_factory,
                          properties={"buildtype": "sdk", "arch": arch, "platform": platform})

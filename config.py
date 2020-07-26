@@ -1,7 +1,7 @@
 # This file collects various global configuration variables.
 
 import json
-from buildbot.buildslave import BuildSlave
+from buildbot.worker import Worker
 
 # Will be passed to every build with --distributor argument to makepanda.
 distributor = "cmu"
@@ -75,21 +75,26 @@ sdk_excludes = [
     "/panda/src/skel/*",
 ]
 
-# List of slave names for each platform.
-linux_slaves = ["build-lnx"]
-windows_slaves = ["build-win3"]
-macosx_10_6_slaves = ["build-osx"]
-macosx_10_9_slaves = ["build-osx-2"]
+# List of worker names for each platform.
+linux_workers = ["build-lnx"]
+windows_workers = ["build-win3"]
+macosx_10_6_workers = ["build-osx"]
+macosx_10_9_workers = ["build-osx-2"]
 
-# These files contain metadata (incl. passwords) of the slaves and users.
-slaves_fn = "slaves.json"
+# GitHub OAuth configuration
+github_oauth_client_id = "c8d9d6b985fdff918e58"
+github_oauth_client_secret = "89a456962e91303fbb2de4d3a876dcf047d8e60e"
+
+# These files contain metadata (incl. passwords) of the workers and users.
+workers_fn = "workers.json"
 users_fn = "users.json"
 
-# Load the slaves from an external JSON file, since we don't want
-# the slave passwords to become publicly visible.
-slaves = []
-for slave_spec in json.load(open(slaves_fn, 'r')):
-    slaves.append(BuildSlave(**slave_spec))
+# Load the workers from an external JSON file, since we don't want
+# the worker passwords to become publicly visible.
+workers = []
+for worker_spec in json.load(open(workers_fn, 'r')):
+    name = worker_spec.pop('name')
+    workers.append(Worker(name, **worker_spec))
 
 # Do the same for the user accounts of the web interface.
 users = []

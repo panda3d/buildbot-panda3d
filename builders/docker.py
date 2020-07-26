@@ -2,7 +2,7 @@
 This file controls the builders for Linux distributions, via Docker.
 It is intended to replace the schroot-based approach in debian.py.
 
-All Linux builders can run on a single slave via the use of docker,
+All Linux builders can run on a single worker via the use of docker,
 which manages Linux containers for various Linux distributions.
 
 To set up a distribution, it uses a special Dockerfile which describes
@@ -21,7 +21,7 @@ from buildbot.steps.source.git import Git
 from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileDownload, FileUpload
 from buildbot.steps.master import MasterShellCommand
-from buildbot.steps.slave import RemoveDirectory
+from buildbot.steps.worker import RemoveDirectory
 from buildbot.config import BuilderConfig
 from buildbot.locks import MasterLock
 
@@ -234,7 +234,7 @@ build_steps = [
     ] + whl_version_steps + [
 
     # Download the Dockerfile for this distribution.
-    FileDownload(mastersrc=Interpolate("dockerfiles/%(prop:suite)s-%(prop:arch)s"), slavedest="Dockerfile", workdir="context"),
+    FileDownload(mastersrc=Interpolate("dockerfiles/%(prop:suite)s-%(prop:arch)s"), workerdest="Dockerfile", workdir="context"),
 
     # Make sure the base distribution is up-to-date.
     ShellCommand(command=cloudimg_cmd, workdir="context"),
@@ -269,7 +269,7 @@ repo_lock = MasterLock('reprepro')
 # Steps to publish the runtime and SDK.
 publish_deb_steps = [
     # Upload the deb package.
-    FileUpload(slavesrc=deb_filename, masterdest=deb_upload_filename,
+    FileUpload(workersrc=deb_filename, masterdest=deb_upload_filename,
                mode=0o664, haltOnFailure=True,
                doStepIf=lambda step:not step.getProperty("optimize", False)),
 
@@ -292,6 +292,6 @@ for step in build_steps + publish_deb_steps:
 
 def docker_builder(buildtype, distro, suite, arch):
     return BuilderConfig(name='-'.join((buildtype, suite, arch)),
-                         slavenames=config.linux_slaves,
+                         workernames=config.linux_workers,
                          factory=deb_factory,
                          properties={"buildtype": buildtype, "distro": distro, "suite": suite, "arch": arch, "optimize": False})

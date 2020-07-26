@@ -86,12 +86,12 @@ build_steps = [
     ] + whl_version_steps + [
 
     # Download and run the script to set up manylinux.
-    FileDownload(mastersrc="build_scripts/prepare_manylinux.sh", slavedest="prepare_manylinux.sh", workdir="."),
+    FileDownload(mastersrc="build_scripts/prepare_manylinux.sh", workerdest="prepare_manylinux.sh", workdir="."),
     ShellCommand(name="prepare", command=["bash", "prepare_manylinux.sh"], workdir=".", haltOnFailure=True),
 
     # Download the Dockerfile for this distribution.
     FileDownload(mastersrc=Interpolate("dockerfiles/manylinux1-%(prop:arch)s"),
-                 slavedest="docker/Dockerfile", workdir="manylinux"),
+                 workerdest="docker/Dockerfile", workdir="manylinux"),
 
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="manylinux", haltOnFailure=True),
@@ -114,7 +114,7 @@ for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m'
              haltOnFailure=True, doStepIf=do_step),
 
         # Upload the wheel file.
-        FileUpload(name="upload "+abi, slavesrc=whl_filename,
+        FileUpload(name="upload "+abi, workersrc=whl_filename,
                    masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
                    mode=0o664, haltOnFailure=True, doStepIf=do_step),
 
@@ -131,6 +131,6 @@ for step in build_steps:
 def manylinux_builder(suite, arch):
     platform = "-".join((suite, arch))
     return BuilderConfig(name=platform,
-                         slavenames=config.linux_slaves,
+                         workernames=config.linux_workers,
                          factory=manylinux_factory,
                          properties={"arch": arch, "platform": platform})
