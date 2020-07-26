@@ -32,7 +32,7 @@ def get_build_command(abi):
     return [
         "docker", "run", "--rm=true",
         #"-i", Interpolate("--name=%(prop:buildername)s"),
-        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
         Property("platform"),
 
@@ -55,7 +55,7 @@ def get_test_command(abi, whl_filename):
     return [
         "docker", "run", "--rm=true",
         #"-i", Interpolate("--name=%(prop:buildername)s"),
-        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
         Property("platform"),
 

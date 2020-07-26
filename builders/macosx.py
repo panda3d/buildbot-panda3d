@@ -28,8 +28,7 @@ def dmg_version(props):
         version += "-" + props["got_revision"][:7]
 
     if version.startswith("1.9.") or version.startswith("1.10."):
-        osxver = osxtarget.getRenderingFor(props)
-        version += '-MacOSX' + osxver
+        version += '-MacOSX' + props["osxtarget"]
 
     return version
 
@@ -42,22 +41,8 @@ def get_dmg_upload_filename():
 
 
 @renderer
-def osxtarget(props):
-    osxver = props.getProperty("osxtarget", None)
-    if osxver is not None:
-        return osxver
-
-    version = props["version"]
-    if version.startswith("1.9.") or version.startswith("1.10."):
-        return "10.6"
-    else:
-        return "10.9"
-
-
-@renderer
 def universal_flag(props):
-    osxver = osxtarget.getRenderingFor(props)
-    if osxver == "10.6":
+    if props["osxtarget"] == "10.6":
         return ["--universal"]
     else:
         return []
@@ -65,7 +50,7 @@ def universal_flag(props):
 
 @renderer
 def platform_prefix(props):
-    osxver = osxtarget.getRenderingFor(props)
+    osxver = props["osxtarget"]
     return "macosx_" + osxver.replace('.', '_')
 
 
@@ -93,7 +78,7 @@ def get_build_step(abi):
         "--everything",
         "--outputdir", outputdir,
         common_flags, universal_flag,
-        "--osxtarget", osxtarget,
+        "--osxtarget", Property("osxtarget"),
         "--no-gles", "--no-gles2", "--no-egl",
         "--version", Property("version"),
     ]
@@ -133,7 +118,7 @@ def get_makewheel_step(abi, arch):
         "makepanda/makewheel.py",
         "--outputdir", outputdir,
         "--version", whl_version,
-        "--platform", Interpolate("macosx-%s-%s", osxtarget, arch),
+        "--platform", Interpolate("macosx-%s-%s", Property("osxtarget"), arch),
         "--verbose",
     ]
 

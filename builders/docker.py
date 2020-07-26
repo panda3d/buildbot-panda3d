@@ -156,7 +156,7 @@ def get_build_command(ver):
     return [
         "docker", "run", "--rm=true",
         "-i", Interpolate("--name=%(prop:buildername)s"),
-        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
         Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
@@ -176,7 +176,7 @@ def get_test_command(ver):
     return [
         "docker", "run", "--rm=true",
         "-i", Interpolate("--name=%(prop:buildername)s"),
-        "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+        "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
         "-e", Interpolate("PYTHONPATH=/build/%s", common.outputdir),
         "-e", Interpolate("LD_LIBRARY_PATH=/build/%s/lib", common.outputdir),
@@ -191,7 +191,7 @@ def get_test_command(ver):
 package_cmd = [
     "docker", "run", "--rm=true",
     "-i", Interpolate("--name=%(prop:buildername)s"),
-    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+    "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
     "-w", "/build/",
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
@@ -208,7 +208,7 @@ package_cmd = [
 test_deployng_cmd = [
     "docker", "run", "--rm=true",
     "-i", Interpolate("--name=%(prop:buildername)s"),
-    "-v", Interpolate("%(prop:workdir)s/build/:/build/:rw"),
+    "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
     "-w", "/build/",
     "-e", Interpolate("PYTHONPATH=/build/%s", common.outputdir),
     "-e", Interpolate("LD_LIBRARY_PATH=/build/%s/lib", common.outputdir),
