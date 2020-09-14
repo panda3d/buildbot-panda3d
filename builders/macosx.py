@@ -157,6 +157,11 @@ build_steps = [
     SetPropertyFromCommand("version", command=[
         "python3", "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
+
+    # Delete the built dir, if requested.
+    ShellCommand(name="clean",
+                 command=["rm", "-rf", outputdir, ".pytest_cache", get_dmg_filename(), "dstroot"],
+                 haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
 ]
 
 build_steps += whl_version_steps

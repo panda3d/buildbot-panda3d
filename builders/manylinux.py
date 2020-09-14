@@ -26,6 +26,20 @@ def setarch(props):
         return []
 
 
+def get_clean_command():
+    "Returns the command used to clean the build."
+
+    return [
+        "docker", "run", "--rm=true",
+        #"-i", Interpolate("--name=%(prop:buildername)s"),
+        "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
+        "-w", "/build/",
+        Property("platform"),
+
+        "rm", "-rf", common.outputdir, ".pytest_cache",
+    ]
+
+
 def get_build_command(abi):
     "Returns the command used to compile Panda3D from source."
 
@@ -95,6 +109,11 @@ build_steps = [
 
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="manylinux", haltOnFailure=True),
+
+    # Delete the built dir, if requested.  Requires running in Docker because the files are
+    # owned by the root user (since the docker container runs as root)
+    ShellCommand(name="clean", command=get_clean_command(),
+                 haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
 ]
 
 for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):

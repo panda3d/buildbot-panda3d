@@ -152,6 +152,11 @@ build_steps = [
         get_python_executable("cp37-cp37m"),
         "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
+
+    # Delete the built dir, if requested.
+    ShellCommand(name="clean",
+                 command=["rmdir", "/S", "/Q", outputdir, outputdir_cp34],
+                 haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
 ]
 
 build_steps += whl_version_steps

@@ -152,6 +152,20 @@ setup_cmd = [
 ]
 
 
+def get_clean_command():
+    "Returns the command used to clean the build."
+
+    return [
+        "docker", "run", "--rm=true",
+        "-i", Interpolate("--name=%(prop:buildername)s"),
+        "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
+        "-w", "/build/",
+        Interpolate("%(prop:suite)s-%(prop:arch)s"),
+
+        "rm", "-rf", common.outputdir, ".pytest_cache",
+    ]
+
+
 def get_build_command(ver):
     return [
         "docker", "run", "--rm=true",
@@ -229,6 +243,10 @@ build_steps = [
     SetPropertyFromCommand("version", command=[
         "python3", "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
+
+    # Delete the built dir, if requested.
+    ShellCommand(name="clean", command=get_clean_command(),
+                 haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
 
     # These steps fill in properties used to determine upstream_version.
     ] + whl_version_steps + [
