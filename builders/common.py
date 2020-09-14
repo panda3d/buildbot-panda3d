@@ -209,9 +209,6 @@ def common_flags(props):
     if props.getProperty("threads", 0) > 1:
         flags.append("--threads=%d" % (props["threads"]))
 
-    if props.getProperty("clean"):
-        flags.append("--clean")
-
     buildtype = "sdk"
 
     if "buildtype" in props:
