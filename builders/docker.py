@@ -33,52 +33,55 @@ from .common import common_flags, buildtype_flag, whl_version_steps, publish_rtd
 from . import common
 
 
-@renderer
-def upstream_version(props):
+def get_upstream_version(props):
     "Determine which version string a .deb package should have."
 
     if props["revision"] == "v" + props["version"]:
         # We requested building a particular version tag, so this must be a
         # release.
         return props["version"]
+    else:
+        version = tuple(map(int, props["version"].split('.')))
 
-    version = tuple(map(int, props["version"].split('.')))
+        # Was this commit branched off from the main branch?
+        local = ""
+        if props["merge-base"] != props["got_revision"] and not props["branch"].startswith("release/"):
+            # Add a local tag indicating that this has unofficial changes.
+            local += "+g" + props["got_revision"][:7]
 
-    # Was this commit branched off from the main branch?
-    local = ""
-    if props["merge-base"] != props["got_revision"] and not props["branch"].startswith("release/"):
-        # Add a local tag indicating that this has unofficial changes.
-        local += "+g" + props["got_revision"][:7]
+        # Is this a post-release build?  Check using the output of "git describe",
+        # which contains the last release tag plus the number of commits since it.
+        if "commit-description" in props:
+            desc = props["commit-description"].split('-')
 
-    # Is this a post-release build?  Check using the output of "git describe",
-    # which contains the last release tag plus the number of commits since it.
-    if "commit-description" in props:
-        desc = props["commit-description"].split('-')
-
-        if desc[0] == "v" + props["version"]:
-            if len(desc) == 1:
-                # This is exactly this release.
-                return props["version"]
-            else:
-                # This is a post-release.
-                return "{0}+post{1}{2}".format(props["version"], desc[1], local)
+            if desc[0] == "v" + props["version"]:
+                if len(desc) == 1:
+                    # This is exactly this release.
+                    return props["version"]
+                else:
+                    # This is a post-release.
+                    return "{0}+post{1}{2}".format(props["version"], desc[1], local)
 
     # No, it's a pre-release.  Make a version tag based on the number of
     # commits since the last major release.
     return "{0}~dev{1}{2}".format(props["version"], props["commit-index"], local)
 
-@renderer
-def debian_version(props):
+
+def get_debian_version(props):
     "Determine which version string a .deb package should have."
 
-    debver = upstream_version.getRenderingFor(props)
-    return debver + "~" + props["suite"]
+    return get_upstream_version(props) + "~" + props["suite"]
+
 
 @renderer
-def deb_filename(props):
+def debian_version(props):
+    return get_debian_version(props)
+
+
+def get_deb_filename(props):
     "Determines the name of a .deb file for uploading."
 
-    debver = debian_version.getRenderingFor(props)
+    debver = get_debian_version(props)
 
     if "buildtype" in props and props["buildtype"] == "runtime":
         pkg_name = "panda3d-runtime"
@@ -88,13 +91,19 @@ def deb_filename(props):
 
     return "%s_%s_%s.deb" % (pkg_name, debver, props["arch"])
 
+
+@renderer
+def deb_filename(props):
+    return get_deb_filename(props)
+
+
 @renderer
 def deb_upload_filename(props):
     "Determines the upload location of a .deb file on the master."
 
     return '/'.join((config.downloads_dir,
                      props["got_revision"],
-                     deb_filename.getRenderingFor(props)))
+                     get_deb_filename(props)))
 
 @renderer
 def deb_archive_dir(props):
