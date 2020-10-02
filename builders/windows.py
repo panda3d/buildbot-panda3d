@@ -156,7 +156,9 @@ build_steps = [
     # Delete the built dir, if requested.
     ShellCommand(name="clean",
                  command=["rmdir", "/S", "/Q", outputdir, outputdir_cp34],
-                 haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
+                 haltOnFailure=False, flunkOnFailure=False, warnOnFailure=False,
+                 flunkOnWarnings=False, warnOnWarnings=False,
+                 doStepIf=lambda step:step.getProperty("clean", False)),
 ]
 
 build_steps += whl_version_steps
