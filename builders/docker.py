@@ -239,6 +239,9 @@ changelog_msg = Interpolate("Automatic build %(prop:buildnumber)s by builder %(p
 build_steps = [
     Git(config.git_url, getDescription={'match': 'v*'}),
 
+    # Patch a bug in 1.10.7
+    ShellCommand(command=["sed", "-i", "s/\"version\": SDK\\[\"PYTHONVERSION\"\\]\\[6:\\],/\"version\": SDK[\"PYTHONVERSION\"][6:].rstrip('dmu'),/", "makepanda/makepandacore.py"]),
+
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
         "python3", "makepanda/getversion.py", buildtype_flag],
