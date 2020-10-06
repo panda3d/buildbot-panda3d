@@ -187,7 +187,7 @@ for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename32, whl_filename64], haltOnFailure=False),
     ]
 
-for abi in ('cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
+for abi in ('cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
     whl_filename64 = get_whl_filename(abi, 'x86_64')
 
     build_steps_10_9 += [

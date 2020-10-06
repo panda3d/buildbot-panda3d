@@ -116,7 +116,7 @@ build_steps = [
                  haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
 ]
 
-for abi in ('cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
+for abi in ('cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename = common.get_whl_filename(abi)
 
     do_step = True
