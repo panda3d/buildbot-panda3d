@@ -55,11 +55,11 @@ RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake .. 
 
 # Install more recent version of libX11
 RUN cd /root && \
-    curl -O https://www.panda3d.org/download/noversion/libX11-devel-1.6.4-3.el6.i686.rpm && \
-    curl -O https://www.panda3d.org/download/noversion/libX11-1.6.4-3.el6.i686.rpm && \
-    curl -O https://www.panda3d.org/download/noversion/xorg-x11-proto-devel-7.7-14.el6.noarch.rpm && \
-    curl -O https://www.panda3d.org/download/noversion/libxcb-1.12-4.el6.i686.rpm && \
-    curl -O https://www.panda3d.org/download/noversion/libxcb-devel-1.12-4.el6.i686.rpm
+    curl -O http://www.panda3d.org/download/noversion/libX11-devel-1.6.4-3.el6.i686.rpm && \
+    curl -O http://www.panda3d.org/download/noversion/libX11-1.6.4-3.el6.i686.rpm && \
+    curl -O http://www.panda3d.org/download/noversion/xorg-x11-proto-devel-7.7-14.el6.noarch.rpm && \
+    curl -O http://www.panda3d.org/download/noversion/libxcb-1.12-4.el6.i686.rpm && \
+    curl -O http://www.panda3d.org/download/noversion/libxcb-devel-1.12-4.el6.i686.rpm
 
 RUN cd / && \
     rpm2cpio /root/libX11-devel-1.6.4-3.el6.i686.rpm | xz -d | cpio -idmvu && \
