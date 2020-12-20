@@ -51,7 +51,7 @@ RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake .. && PATH=/opt/python/cp37-cp37m/bin:$PATH linux32 make VERBOSE=1
+RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake .. && PATH=/opt/python/cp37-cp37m/bin:$PATH linux32 make VERBOSE=1 && rm -rf /root/thirdparty/build
 
 # Install more recent version of libX11
 RUN cd /root && \
