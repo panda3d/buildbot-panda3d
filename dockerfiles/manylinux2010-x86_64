@@ -1,0 +1,57 @@
+FROM quay.io/pypa/manylinux2010_x86_64_centos6_no_vsyscall
+LABEL maintainer="The ManyLinux project"
+
+ENV AUDITWHEEL_ARCH x86_64
+ENV AUDITWHEEL_PLAT manylinux2010_$AUDITWHEEL_ARCH
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+ENV DEVTOOLSET_ROOTPATH /opt/rh/devtoolset-8/root
+ENV PATH $DEVTOOLSET_ROOTPATH/usr/bin:$PATH
+ENV LD_LIBRARY_PATH $DEVTOOLSET_ROOTPATH/usr/lib64:$DEVTOOLSET_ROOTPATH/usr/lib:$DEVTOOLSET_ROOTPATH/usr/lib64/dyninst:$DEVTOOLSET_ROOTPATH/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib
+ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig
+
+# Centos 6 is EOL and is no longer available from the usual mirrors, so switch
+# to https://vault.centos.org
+RUN sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf && \
+    sed -i 's/^mirrorlist/#mirrorlist/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's;^#baseurl=http://mirror;baseurl=https://vault;g' /etc/yum.repos.d/*.repo
+
+COPY build_scripts /build_scripts
+RUN bash build_scripts/build.sh && rm -r build_scripts
+
+ENV SSL_CERT_FILE=/opt/_internal/certs.pem
+
+CMD ["/bin/bash"]
+
+#
+# Begin Panda3D section
+#
+
+# Install some dependencies we'll need later
+RUN yum -y install wget alsa-lib-devel xz tk yasm
+
+# Install virtualenv in Python 2.7 installations
+RUN /opt/python/cp27-cp27m/bin/pip install virtualenv && \
+    /opt/python/cp27-cp27mu/bin/pip install virtualenv
+
+# Install latest cmake version via pip
+RUN /opt/python/cp37-cp37m/bin/pip install --prefer-binary cmake && \
+    ln -s /opt/python/cp37-cp37m/bin/cmake /usr/local/bin/cmake && \
+    cmake --version
+
+# libpulse headers
+RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.tar.gz && \
+    tar -xzf pulseaudio-9.0.tar.gz && \
+    mkdir /usr/local/include/pulse/ && \
+    cp -r pulseaudio-9.0/src/pulse/*.h /usr/local/include/pulse/ && \
+    touch /usr/lib64/libpulse.so
+
+# Build thirdparty libraries
+ENV MAKEPANDA_THIRDPARTY /root/thirdparty
+ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
+RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
+RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake .. && PATH=/opt/python/cp37-cp37m/bin:$PATH make VERBOSE=1 && rm -rf /root/thirdparty/build
+
+# Extra Packages for Panda3D
+RUN yum -y install gtk2-devel

@@ -26,6 +26,11 @@ def setarch(props):
         return []
 
 
+def is_branch_and_manylinux1(branch):
+    return lambda step: (step.getProperty("branch") == branch and \
+                         step.getProperty("platform", "").startswith("manylinux1"))
+
+
 def get_clean_command():
     "Returns the command used to clean the build."
 
@@ -101,10 +106,10 @@ build_steps = [
 
     # Download and run the script to set up manylinux.
     FileDownload(mastersrc="build_scripts/prepare_manylinux.sh", workerdest="prepare_manylinux.sh", workdir="."),
-    ShellCommand(name="prepare", command=["bash", "prepare_manylinux.sh"], workdir=".", haltOnFailure=True),
+    ShellCommand(name="prepare", command=["bash", "prepare_manylinux.sh", Property("platform")], workdir=".", haltOnFailure=True),
 
     # Download the Dockerfile for this distribution.
-    FileDownload(mastersrc=Interpolate("dockerfiles/manylinux1-%(prop:arch)s"),
+    FileDownload(mastersrc=Interpolate("dockerfiles/%(prop:platform)s"),
                  workerdest="docker/Dockerfile", workdir="manylinux"),
 
     # Build the Docker image.
@@ -120,13 +125,16 @@ for abi in ('cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu',
     whl_filename = common.get_whl_filename(abi)
 
     do_step = True
-    if abi in ('cp27-cp27mu', 'cp34-cp34m', 'cp35-cp35m'):
+    if abi == 'cp35-cp35m':
         do_step = is_branch('release/1.10.x')
+    elif abi in ('cp27-cp27mu', 'cp34-cp34m'):
+        do_step = is_branch_and_manylinux1('release/1.10.x')
 
     build_steps += [
         # Invoke makepanda and makewheel.
         Compile(name="compile "+abi, command=get_build_command(abi),
-                haltOnFailure=True, doStepIf=do_step),
+                haltOnFailure=True, doStepIf=do_step,
+                env={'CXXFLAGS': '-Wno-int-in-bool-context'}),
 
         # Run the test suite in a virtualenv.
         Test(name="test "+abi, command=get_test_command(abi, whl_filename),
