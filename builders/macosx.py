@@ -42,7 +42,7 @@ def get_dmg_upload_filename():
 
 @renderer
 def universal_flag(props):
-    if props["osxtarget"] == "10.6":
+    if props["osxtarget"] == "10.6" or props["osxtarget"].startswith("11."):
         return ["--universal"]
     else:
         return []
@@ -167,6 +167,7 @@ build_steps = [
 build_steps += whl_version_steps
 build_steps_10_6 = build_steps[:]
 build_steps_10_9 = build_steps[:]
+build_steps_11_0 = build_steps[:]
 
 for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename32 = get_whl_filename(abi, 'i386')
@@ -198,6 +199,17 @@ for abi in ('cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename64], haltOnFailure=False),
     ]
 
+for abi in ('cp39-cp39',):
+    whl_filename = get_whl_filename(abi, 'universal2')
+
+    build_steps_11_0 += [
+        get_build_step(abi),
+        get_test_step(abi),
+        get_makewheel_step(abi, 'universal2'),
+        get_upload_step(abi, 'universal2', whl_filename),
+        ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename], haltOnFailure=False),
+    ]
+
 # Build and upload the installer.
 package_steps = [
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
@@ -214,6 +226,9 @@ def macosx_builder(osxver):
     if osxver in ('10.6', '10.7', '10.8'):
         workernames = config.macosx_10_6_workers
         buildsteps = build_steps_10_6
+    elif osxver.startswith('11.'):
+        workernames = config.macosx_11_0_workers
+        buildsteps = build_steps_11_0
     else:
         workernames = config.macosx_10_9_workers
         buildsteps = build_steps_10_9

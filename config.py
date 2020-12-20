@@ -80,6 +80,7 @@ linux_workers = ["build-lnx"]
 windows_workers = ["build-win3"]
 macosx_10_6_workers = ["build-osx"]
 macosx_10_9_workers = ["build-osx-2"]
+macosx_11_0_workers = ["build-osx-3"]
 
 # GitHub OAuth configuration
 github_oauth_client_id = "c8d9d6b985fdff918e58"
