@@ -29,7 +29,7 @@ CMD ["/bin/bash"]
 #
 
 # Install some dependencies we'll need later
-RUN yum -y install wget alsa-lib-devel xz tk yasm
+RUN yum -y install wget alsa-lib-devel xz tk yasm flex
 
 # Install virtualenv in Python 2.7 installations
 RUN /opt/python/cp27-cp27m/bin/pip install virtualenv && \
