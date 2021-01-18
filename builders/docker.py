@@ -181,6 +181,8 @@ def get_build_command(ver):
         "-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
+        "-e", "CXXFLAGS=-Wno-int-in-bool-context",
+        "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
         Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
         setarch,
@@ -216,6 +218,7 @@ package_cmd = [
     "-i", Interpolate("--name=%(prop:buildername)s"),
     "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
     "-w", "/build/",
+    "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
     setarch,
@@ -275,12 +278,10 @@ build_steps = [
     # Invoke makepanda.
     Compile(name="compile py2",
             command=get_build_command(2),
-            env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
             haltOnFailure=True,
             doStepIf=is_branch("release/1.10.x")),
     Compile(name="compile py3",
             command=get_build_command(3),
-            env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
             haltOnFailure=True),
 
     # Run the test suite.
@@ -289,7 +290,6 @@ build_steps = [
 
     # Build the installer.
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
-                 env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
                  doStepIf=lambda step:not step.getProperty("optimize", False)),
 
     # And the test scripts for deploy-ng.

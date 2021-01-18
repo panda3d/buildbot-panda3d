@@ -53,6 +53,8 @@ def get_build_command(abi):
         #"-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
+        "-e", "CXXFLAGS=-Wno-int-in-bool-context",
+        "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
         Property("platform"),
 
         setarch,
@@ -133,9 +135,7 @@ for abi in ('cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu',
     build_steps += [
         # Invoke makepanda and makewheel.
         Compile(name="compile "+abi, command=get_build_command(abi),
-                haltOnFailure=True, doStepIf=do_step,
-                env={'CXXFLAGS': '-Wno-int-in-bool-context',
-                     'SOURCE_DATE_EPOCH': Property('commit-timestamp')}),
+                haltOnFailure=True, doStepIf=do_step),
 
         # Run the test suite in a virtualenv.
         Test(name="test "+abi, command=get_test_command(abi, whl_filename),
