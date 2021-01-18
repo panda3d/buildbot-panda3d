@@ -234,6 +234,11 @@ def rtdist_staging_dir(props):
 
 # Steps to figure out which .whl version to use.
 whl_version_steps = [
+    # Get the date of the latest commit.
+    SetPropertyFromCommand("commit-timestamp", command=[
+        "git", "log", "-1", "--pretty=%ct"],
+        haltOnFailure=True),
+
     # Get the point of last merge between this commit and master.
     # Buildbot is very selective about its fetches, so we need to make
     # sure we update the origin/master ref ourselves.

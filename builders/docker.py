@@ -275,10 +275,12 @@ build_steps = [
     # Invoke makepanda.
     Compile(name="compile py2",
             command=get_build_command(2),
+            env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
             haltOnFailure=True,
             doStepIf=is_branch("release/1.10.x")),
     Compile(name="compile py3",
             command=get_build_command(3),
+            env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
             haltOnFailure=True),
 
     # Run the test suite.
@@ -287,6 +289,7 @@ build_steps = [
 
     # Build the installer.
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
+                 env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
                  doStepIf=lambda step:not step.getProperty("optimize", False)),
 
     # And the test scripts for deploy-ng.

@@ -134,7 +134,8 @@ for abi in ('cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu',
         # Invoke makepanda and makewheel.
         Compile(name="compile "+abi, command=get_build_command(abi),
                 haltOnFailure=True, doStepIf=do_step,
-                env={'CXXFLAGS': '-Wno-int-in-bool-context'}),
+                env={'CXXFLAGS': '-Wno-int-in-bool-context',
+                     'SOURCE_DATE_EPOCH': Property('commit-timestamp')}),
 
         # Run the test suite in a virtualenv.
         Test(name="test "+abi, command=get_test_command(abi, whl_filename),

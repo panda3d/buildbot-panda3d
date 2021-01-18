@@ -90,7 +90,8 @@ def get_build_step(abi):
     # Run makepanda - give it enough timeout (1h)
     s = Compile(name='compile '+abi, command=command, timeout=1*60*60,
                 env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
-                     "MAKEPANDA_SDKS": "/Users/buildbot/sdks"},
+                     "MAKEPANDA_SDKS": "/Users/buildbot/sdks",
+                     "SOURCE_DATE_EPOCH": Property("commit-timestamp")},
                 haltOnFailure=True, doStepIf=do_step)
     return s
 
@@ -128,6 +129,7 @@ def get_makewheel_step(abi, arch):
 
     return ShellCommand(name="makewheel " + arch + " " + abi,
                         command=command,
+                        env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
                         haltOnFailure=True, doStepIf=do_step)
 
 
@@ -212,7 +214,8 @@ for abi in ('cp39-cp39',):
 
 # Build and upload the installer.
 package_steps = [
-    ShellCommand(name="package", command=package_cmd, haltOnFailure=True),
+    ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
+                 env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")}),
 
     FileUpload(name="upload dmg", workersrc=get_dmg_filename(),
                masterdest=get_dmg_upload_filename(),

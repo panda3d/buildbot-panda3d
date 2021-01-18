@@ -176,7 +176,8 @@ for abi in ('cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 
         Compile(name="compile "+abi, timeout=6*60*60,
                 command=get_build_command(abi, copy_python=copy_python),
                 env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
-                     "MAKEPANDA_SDKS": "C:\\sdks"},
+                     "MAKEPANDA_SDKS": "C:\\sdks",
+                     "SOURCE_DATE_EPOCH": Property("commit-timestamp")},
                 haltOnFailure=True, doStepIf=do_step),
 
         # Run the test suite, but in a virtualenv.
@@ -198,7 +199,8 @@ for abi in ('cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 
 # Build and upload the installer.
 build_steps += [
     ShellCommand(name="package", command=package_cmd,
-                 env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty"},
+                 env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
+                      "SOURCE_DATE_EPOCH": Property("commit-timestamp")},
                  haltOnFailure=True),
 
     FileUpload(name="upload exe", workersrc=get_exe_filename(),
