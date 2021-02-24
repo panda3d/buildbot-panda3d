@@ -20,7 +20,7 @@ from . import common
 def setarch(props):
     "Returns the appropriate setarch command if needed."
 
-    if "arch" in props and props["arch"] not in ("amd64", "x86_64"):
+    if "arch" in props and props["arch"] not in ("amd64", "x86_64", "aarch64"):
         return ["setarch", props["arch"]]
     else:
         return []
