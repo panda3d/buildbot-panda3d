@@ -1,6 +1,7 @@
 FROM ubuntu:focal
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC
 
 RUN echo "deb http://archive.ubuntu.com/ubuntu focal main universe multiverse" > /etc/apt/sources.list
 RUN echo "deb http://archive.ubuntu.com/ubuntu focal-security main universe multiverse" >> /etc/apt/sources.list
@@ -29,7 +30,10 @@ RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON -DBUILD_FCOLLADA=ON .. && make VERBOSE=1
+RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
+    mkdir /root/thirdparty/build; \
+    cd /root/thirdparty/build; \
+    cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON -DBUILD_FCOLLADA=ON .. && make VERBOSE=1
 
 # Install pip / pytest
 ADD https://bootstrap.pypa.io/get-pip.py /root/get-pip.py

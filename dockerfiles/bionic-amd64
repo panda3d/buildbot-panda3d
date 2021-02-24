@@ -21,7 +21,8 @@ RUN echo '#!/bin/sh' > /usr/sbin/policy-rc.d \
 	\
 	&& echo 'Acquire::GzipIndexes "true"; Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/docker-gzip-indexes
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC
 
 RUN echo "deb http://archive.ubuntu.com/ubuntu bionic main universe multiverse" > /etc/apt/sources.list
 RUN echo "deb http://archive.ubuntu.com/ubuntu bionic-security main universe multiverse" >> /etc/apt/sources.list
@@ -51,4 +52,7 @@ RUN pip install pytest && pip3 install pytest
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON .. && make VERBOSE=1
+RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
+    mkdir /root/thirdparty/build; \
+    cd /root/thirdparty/build; \
+    cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON .. && make VERBOSE=1

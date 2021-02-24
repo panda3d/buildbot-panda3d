@@ -91,7 +91,9 @@ def get_build_step(abi):
     s = Compile(name='compile '+abi, command=command, timeout=1*60*60,
                 env={"MAKEPANDA_THIRDPARTY": "/Users/buildbot/thirdparty",
                      "MAKEPANDA_SDKS": "/Users/buildbot/sdks",
-                     "SOURCE_DATE_EPOCH": Property("commit-timestamp")},
+                     "SOURCE_DATE_EPOCH": Property("commit-timestamp"),
+                     "PYTHONHASHSEED": "0",
+                     "TZ": "UTC"},
                 haltOnFailure=True, doStepIf=do_step)
     return s
 
@@ -129,7 +131,9 @@ def get_makewheel_step(abi, arch):
 
     return ShellCommand(name="makewheel " + arch + " " + abi,
                         command=command,
-                        env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")},
+                        env={"SOURCE_DATE_EPOCH": Property("commit-timestamp"),
+                             "PYTHONHASHSEED": "0",
+                             "TZ": "UTC"},
                         haltOnFailure=True, doStepIf=do_step)
 
 
@@ -215,7 +219,9 @@ for abi in ('cp39-cp39',):
 # Build and upload the installer.
 package_steps = [
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
-                 env={"SOURCE_DATE_EPOCH": Property("commit-timestamp")}),
+                 env={"SOURCE_DATE_EPOCH": Property("commit-timestamp"),
+                      "PYTHONHASHSEED": "0",
+                      "TZ": "UTC"}),
 
     FileUpload(name="upload dmg", workersrc=get_dmg_filename(),
                masterdest=get_dmg_upload_filename(),

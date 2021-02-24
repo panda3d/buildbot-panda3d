@@ -55,6 +55,7 @@ def get_build_command(abi):
         "-w", "/build/",
         "-e", "CXXFLAGS=-Wno-int-in-bool-context",
         "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
+        "-e", "PYTHONHASHSEED=0",
         Property("platform"),
 
         setarch,

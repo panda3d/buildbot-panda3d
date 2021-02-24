@@ -1,10 +1,12 @@
 FROM phusion/centos-5-32
 MAINTAINER The ManyLinux project
 
-ENV AUDITWHEEL_PLAT manylinux1_i686
-ENV LC_ALL=en_US.UTF-8
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE en_US.UTF-8
+ENV AUDITWHEEL_PLAT=manylinux1_i686 \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    TZ=UTC
+
 ENV PATH /opt/rh/devtoolset-2/root/usr/bin:$PATH
 ENV LD_LIBRARY_PATH /opt/rh/devtoolset-2/root/usr/lib64:/opt/rh/devtoolset-2/root/usr/lib:/usr/local/lib64:/usr/local/lib
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
@@ -51,7 +53,10 @@ RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
 ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
 RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
-RUN mkdir /root/thirdparty/build; cd /root/thirdparty/build && linux32 cmake .. && PATH=/opt/python/cp37-cp37m/bin:$PATH linux32 make VERBOSE=1 && rm -rf /root/thirdparty/build
+RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
+    mkdir /root/thirdparty/build; \
+    cd /root/thirdparty/build; \
+    linux32 cmake .. && PATH=/opt/python/cp37-cp37m/bin:$PATH linux32 make VERBOSE=1 && rm -rf /root/thirdparty/build
 
 # Install more recent version of libX11
 RUN cd /root && \

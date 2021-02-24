@@ -183,6 +183,7 @@ def get_build_command(ver):
         "-w", "/build/",
         "-e", "CXXFLAGS=-Wno-int-in-bool-context",
         "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
+        "-e", "PYTHONHASHSEED=0",
         Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
         setarch,
@@ -219,6 +220,7 @@ package_cmd = [
     "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
     "-w", "/build/",
     "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
+    "-e", "PYTHONHASHSEED=0",
     Interpolate("%(prop:suite)s-%(prop:arch)s"),
 
     setarch,
