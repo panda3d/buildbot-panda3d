@@ -65,3 +65,6 @@ RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
     mkdir /root/thirdparty/build; \
     cd /root/thirdparty/build; \
     linux32 cmake .. && PATH=/opt/python/cp37-cp37m/bin:$PATH linux32 make VERBOSE=1 && rm -rf /root/thirdparty/build
+
+# Extra Packages for Panda3D
+RUN yum -y install mesa-libEGL-devel

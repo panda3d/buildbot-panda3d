@@ -190,7 +190,7 @@ def get_build_command(ver):
         get_python_executable(ver),
         "makepanda/makepanda.py",
         "--everything",
-        "--no-gles", "--no-gles2", "--no-egl",
+        "--no-gles", "--no-gles2",
         common_flags, dist_flags,
         "--debversion", debian_version,
         "--version", Property("version"),

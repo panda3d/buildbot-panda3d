@@ -62,7 +62,7 @@ def get_build_command(abi):
         "/opt/python/%s/bin/python" % (abi),
          "makepanda/makepanda.py",
         "--everything", "--no-directscripts",
-        "--no-gles", "--no-gles2", "--no-egl",
+        "--no-gles", "--no-gles2",
         "--python-incdir=/opt/python/%s/include" % (abi),
         "--python-libdir=/opt/python/%s/lib" % (abi),
         common_flags,

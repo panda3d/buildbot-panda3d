@@ -39,7 +39,7 @@ RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
     libswscale-dev libfreetype6-dev libgtk2.0-dev libeigen3-dev \
     libsquish-dev libfcollada-dev libvrpn-dev libquat-dev \
     libassimp-dev libbullet-dev libopenexr-dev libopusfile-dev \
-    cmake3 unzip git ca-certificates python3-dev
+    cmake3 unzip git ca-certificates python3-dev libegl1-mesa-dev
 
 ADD https://bootstrap.pypa.io/3.4/get-pip.py /root/get-pip.py
 RUN cd /root && linux32 python get-pip.py && linux32 python3 get-pip.py
