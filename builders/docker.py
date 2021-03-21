@@ -138,7 +138,9 @@ def dist_flags(props):
 
 @renderer
 def setarch(props):
-    if "arch" in props and props["arch"] != "amd64":
+    if "arch" in props and props["arch"] == "arm64":
+        return ["/usr/bin/setarch", "aarch64"]
+    elif "arch" in props and props["arch"] != "amd64":
         return ["/usr/bin/setarch", props["arch"]]
     else:
         return []
