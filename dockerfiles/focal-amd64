@@ -36,6 +36,6 @@ RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
     cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON -DBUILD_FCOLLADA=ON .. && make VERBOSE=1
 
 # Install pip / pytest
-ADD https://bootstrap.pypa.io/2.7/get-pip.py /root/get-pip.py
+ADD https://bootstrap.pypa.io/pip/2.7/get-pip.py /root/get-pip.py
 RUN python2 /root/get-pip.py
 RUN python2 -m pip install pytest && python3 -m pip install pytest

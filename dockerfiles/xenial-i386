@@ -41,8 +41,8 @@ RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
     libassimp-dev libbullet-dev libopenexr-dev libopusfile-dev \
     cmake unzip git ca-certificates python3-dev libegl1-mesa-dev
 
-ADD https://bootstrap.pypa.io/2.7/get-pip.py /root/get-pip-2.7.py
-ADD https://bootstrap.pypa.io/3.5/get-pip.py /root/get-pip-3.5.py
+ADD https://bootstrap.pypa.io/pip/2.7/get-pip.py /root/get-pip-2.7.py
+ADD https://bootstrap.pypa.io/pip/3.5/get-pip.py /root/get-pip-3.5.py
 RUN cd /root && linux32 python get-pip-2.7.py && linux32 python3 get-pip-3.5.py
 RUN linux32 python -m pip install pytest && linux32 python3 -m pip install pytest
 
