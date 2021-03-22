@@ -155,10 +155,20 @@ def get_python_executable(ver):
 
 cloudimg_cmd = Interpolate("wget -N https://partner-images.canonical.com/core/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz || wget -N https://partner-images.canonical.com/core/unsupported/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz")
 
+
+@renderer
+def docker_platform_flags(props):
+    if "arch" in props and props["arch"] == "arm64":
+        return ["--platform", "linux/arm64"]
+    else:
+        return []
+
+
 # The command to set up the Docker image.
 setup_cmd = [
-    "docker", "build", "-t",
-    Interpolate("%(prop:suite)s-%(prop:arch)s"),
+    "docker", "build",
+    docker_platform_flags,
+    "-t", Interpolate("%(prop:suite)s-%(prop:arch)s"),
     "."
 ]
 
@@ -168,6 +178,7 @@ def get_clean_command():
 
     return [
         "docker", "run", "--rm=true",
+        docker_platform_flags,
         "-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
@@ -180,6 +191,7 @@ def get_clean_command():
 def get_build_command(ver):
     return [
         "docker", "run", "--rm=true",
+        docker_platform_flags,
         "-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
@@ -203,6 +215,7 @@ def get_build_command(ver):
 def get_test_command(ver):
     return [
         "docker", "run", "--rm=true",
+        docker_platform_flags,
         "-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
@@ -218,6 +231,7 @@ def get_test_command(ver):
 
 package_cmd = [
     "docker", "run", "--rm=true",
+    docker_platform_flags,
     "-i", Interpolate("--name=%(prop:buildername)s"),
     "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
     "-w", "/build/",
@@ -237,6 +251,7 @@ package_cmd = [
 # The command used to run the deploy-ng tests.
 test_deployng_cmd = [
     "docker", "run", "--rm=true",
+    docker_platform_flags,
     "-i", Interpolate("--name=%(prop:buildername)s"),
     "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
     "-w", "/build/",
