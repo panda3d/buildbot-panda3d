@@ -53,3 +53,8 @@ RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
     mkdir /root/thirdparty/build; \
     cd /root/thirdparty/build; \
     linux32 cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON .. && linux32 make VERBOSE=1
+
+ADD https://www.khronos.org/registry/EGL/api/EGL/egl.h /usr/include/EGL/egl.h
+ADD https://www.khronos.org/registry/EGL/api/EGL/eglext.h /usr/include/EGL/eglext.h
+ADD https://www.khronos.org/registry/EGL/api/EGL/eglplatform.h /usr/include/EGL/eglplatform.h
+ADD https://www.khronos.org/registry/EGL/api/KHR/khrplatform.h /usr/include/KHR/khrplatform.h
