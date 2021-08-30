@@ -1,0 +1,39 @@
+FROM ubuntu:hirsute
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC
+
+RUN echo "deb http://archive.ubuntu.com/ubuntu hirsute main universe multiverse" > /etc/apt/sources.list
+RUN echo "deb http://archive.ubuntu.com/ubuntu hirsute-security main universe multiverse" >> /etc/apt/sources.list
+RUN echo "deb http://archive.ubuntu.com/ubuntu hirsute-updates main universe multiverse" >> /etc/apt/sources.list
+
+RUN apt-get update && \
+    apt-get -y --no-install-recommends install dirmngr gnupg && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BCD3D563A258828C
+
+RUN apt-get update && apt-get -y --no-install-recommends install \
+    pkg-config bison flex build-essential fakeroot \
+    libpng-dev zlib1g-dev libssl-dev libjpeg-dev libtiff-dev \
+    libx11-dev libxrandr-dev libxxf86dga-dev libxcursor-dev \
+    libgl1-mesa-dev nvidia-cg-toolkit libode-dev libopenal-dev \
+    libvorbis-dev libavcodec-dev libavutil-dev libavformat-dev \
+    libswscale-dev libfreetype6-dev libgtk2.0-dev libeigen3-dev \
+    libsquish-dev \
+    libassimp-dev libbullet-dev libopenexr-dev libopusfile-dev \
+    cmake unzip git ca-certificates \
+    python2-dev python-setuptools python-is-python2 \
+    python3-dev python3-pip python3-setuptools libegl-dev
+
+# Build thirdparty libraries
+ENV MAKEPANDA_THIRDPARTY /root/thirdparty
+ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
+RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
+RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
+    mkdir /root/thirdparty/build; \
+    cd /root/thirdparty/build; \
+    cmake -DDISABLE_ALL=ON -DBUILD_ARTOOLKIT=ON -DBUILD_FCOLLADA=ON -DBUILD_VRPN=ON .. && make VERBOSE=1
+
+# Install pip / pytest
+ADD https://bootstrap.pypa.io/pip/2.7/get-pip.py /root/get-pip.py
+RUN python2 /root/get-pip.py
+RUN python2 -m pip install pytest && python3 -m pip install pytest
