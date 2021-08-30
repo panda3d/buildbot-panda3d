@@ -76,7 +76,7 @@ sdk_excludes = [
 ]
 
 # List of worker names for each platform.
-linux_workers = ["build-lnx"]
+linux_workers = ["build-lnx", "build-lnx-2"]
 windows_workers = ["build-win3"]
 macosx_10_6_workers = ["build-osx"]
 macosx_10_9_workers = ["build-osx-2"]
