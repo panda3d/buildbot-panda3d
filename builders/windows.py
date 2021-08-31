@@ -27,7 +27,7 @@ def get_exe_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3])
+        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
 
     return Interpolate("Panda3D-%s%s%s.exe", Property("version"), suffix, arch_suffix)
 
@@ -37,7 +37,7 @@ def get_pdb_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3])
+        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
 
     return Interpolate("Panda3D-%s%s%s-pdb.zip", Property("version"), suffix, arch_suffix)
 
@@ -55,7 +55,7 @@ def get_exe_upload_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3])
+        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
 
     return Interpolate("%s/Panda3D-SDK-%s%s%s.exe",
         common.upload_dir, exe_version, suffix, arch_suffix)
@@ -66,7 +66,7 @@ def get_pdb_upload_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3])
+        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
 
     return Interpolate("%s/Panda3D-SDK-%s%s%s-pdb.zip",
         common.upload_dir, exe_version, suffix, arch_suffix)
@@ -163,7 +163,7 @@ build_steps = [
 
 build_steps += whl_version_steps
 
-for abi in ('cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+for abi in ('cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
     whl_filename = get_whl_filename(abi)
     copy_python = (abi == 'cp37-cp37m')
 
