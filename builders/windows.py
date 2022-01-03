@@ -27,7 +27,7 @@ def get_exe_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
+        suffix = "-py%s.%s" % (abi[2], abi[3:].split('-')[0])
 
     return Interpolate("Panda3D-%s%s%s.exe", Property("version"), suffix, arch_suffix)
 
@@ -37,7 +37,7 @@ def get_pdb_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
+        suffix = "-py%s.%s" % (abi[2], abi[3:].split('-')[0])
 
     return Interpolate("Panda3D-%s%s%s-pdb.zip", Property("version"), suffix, arch_suffix)
 
@@ -55,7 +55,7 @@ def get_exe_upload_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
+        suffix = "-py%s.%s" % (abi[2], abi[3:].split('-')[0])
 
     return Interpolate("%s/Panda3D-SDK-%s%s%s.exe",
         common.upload_dir, exe_version, suffix, arch_suffix)
@@ -66,7 +66,7 @@ def get_pdb_upload_filename(abi=None):
 
     suffix = ""
     if abi and not abi.startswith('cp27-'):
-        suffix = "-py%s.%s" % (abi[2], abi[3:].rstrip('dmu'))
+        suffix = "-py%s.%s" % (abi[2], abi[3:].split('-')[0])
 
     return Interpolate("%s/Panda3D-SDK-%s%s%s-pdb.zip",
         common.upload_dir, exe_version, suffix, arch_suffix)
@@ -78,7 +78,7 @@ def get_python_executable(abi):
     if abi == "cp27-cp27m":
         return Interpolate("C:\\thirdparty\\win-python%s\\python.exe", arch_suffix)
     else:
-        return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python.exe", abi[2], abi[3], arch_suffix)
+        return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python.exe", abi[2], abi[3:].split('-')[0], arch_suffix)
 
 
 @renderer
