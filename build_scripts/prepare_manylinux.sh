@@ -16,7 +16,7 @@ git reset --hard origin/$branch
 
 # Prefetch sources for OpenSSL and cURL.
 if [ -f ./docker/build_scripts/prefetch.sh ]; then
-    bash ./docker/build_scripts/prefetch.sh perl openssl curl
+    bash ./docker/build_scripts/prefetch.sh perl openssl curl cacert
 fi
 
 popd
