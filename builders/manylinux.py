@@ -31,6 +31,10 @@ def is_branch_and_manylinux1(branch):
                          step.getProperty("platform", "").startswith("manylinux1"))
 
 
+def is_not_manylinux1():
+    return lambda step: not step.getProperty("platform", "").startswith("manylinux1")
+
+
 def get_clean_command():
     "Returns the command used to clean the build."
 
@@ -130,6 +134,8 @@ for abi in ('cp310-cp310', 'cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m',
     do_step = True
     if abi in ('cp27-cp27mu', 'cp34-cp34m', 'cp35-cp35m'):
         do_step = is_branch_and_manylinux1('release/1.10.x')
+    elif abi.startswith('cp31'):
+        do_step = is_not_manylinux1()
 
     build_steps += [
         # Invoke makepanda and makewheel.
