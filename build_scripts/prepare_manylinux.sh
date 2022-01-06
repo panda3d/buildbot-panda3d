@@ -3,8 +3,8 @@
 # Make sure that the resulting stuff is world-readable
 umask 002
 
-branch="master"
-if [ ! -z "$1" ]; then
+branch="main"
+if [ "${1%-*}" = "manylinux1" ] || [ "${1%-*}" = "manylinux2010" ]; then
     branch="${1%-*}"
 fi
 
