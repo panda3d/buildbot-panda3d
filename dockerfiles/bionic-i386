@@ -44,9 +44,10 @@ RUN apt-get update && apt-get -y --force-yes --no-install-recommends install \
     libsquish-dev libfcollada-dev libvrpn-dev libquat-dev \
     libassimp-dev libbullet-dev libopenexr-dev libopusfile-dev \
     cmake unzip git ca-certificates python-pip python-setuptools \
-    python3-dev python3-pip python3-setuptools libegl1-mesa-dev
+    python3-dev python3-pip python3-setuptools libegl1-mesa-dev \
+    python3.7-dev
 
-RUN pip install pytest && pip3 install pytest
+RUN pip install pytest && pip3 install pytest && python3.7 -m pip install pytest
 
 # Build thirdparty libraries
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
