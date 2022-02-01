@@ -1,11 +1,12 @@
-FROM quay.io/pypa/manylinux2014_x86_64
+FROM quay.io/pypa/manylinux2014_aarch64
 
 #
 # Begin Panda3D section
 #
 
 # Install some dependencies we'll need later
-RUN yum -y install wget alsa-lib-devel flex
+RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    yum -y install wget alsa-lib-devel flex yasm
 
 # libpulse headers
 RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.tar.gz && \
@@ -24,7 +25,7 @@ RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
     cmake .. && PATH=/opt/python/cp39-cp39/bin:$PATH make VERBOSE=1 && rm -rf /root/thirdparty/build
 
 # Extra Packages for Panda3D
-RUN yum -y install gtk2-devel gtk3-devel mesa-libEGL-devel mesa-libGLES-devel
+RUN yum -y install gtk2-devel mesa-libEGL-devel mesa-libGLES-devel
 
 # Extract static Python libraries we'll need for deploy-stub
 RUN tar -C /opt/_internal -xvf /opt/_internal/static-libs-for-embedding-only.tar.xz

@@ -31,8 +31,28 @@ def is_branch_and_manylinux1(branch):
                          step.getProperty("platform", "").startswith("manylinux1"))
 
 
+def is_manylinux1_or_manylinux2010():
+    return lambda step: (step.getProperty("platform", "").startswith("manylinux1") or \
+                         step.getProperty("platform", "").startswith("manylinux2010"))
+
 def is_not_manylinux1():
     return lambda step: not step.getProperty("platform", "").startswith("manylinux1")
+
+
+@renderer
+def docker_platform_flags(props):
+    if "arch" in props and props["arch"] == "aarch64":
+        return ["--platform", "linux/arm64"]
+    else:
+        return []
+
+
+@renderer
+def makepanda_flags(props):
+    if "arch" in props and props["arch"] == "aarch64":
+        return ["--no-nvidiacg"]
+    else:
+        return ["--no-gles", "--no-gles2"]
 
 
 def get_clean_command():
@@ -40,6 +60,7 @@ def get_clean_command():
 
     return [
         "docker", "run", "--rm=true",
+        docker_platform_flags,
         #"-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
@@ -54,10 +75,11 @@ def get_build_command(abi):
 
     return [
         "docker", "run", "--rm=true",
+        docker_platform_flags,
         #"-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
-        "-e", "CXXFLAGS=-Wno-int-in-bool-context",
+        "-e", "CXXFLAGS=-Wno-int-in-bool-context -Wno-ignored-attributes",
         "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
         "-e", "PYTHONHASHSEED=0",
         Property("platform"),
@@ -66,7 +88,7 @@ def get_build_command(abi):
         "/opt/python/%s/bin/python" % (abi),
          "makepanda/makepanda.py",
         "--everything", "--no-directscripts",
-        "--no-gles", "--no-gles2",
+        makepanda_flags,
         "--python-incdir=/opt/python/%s/include" % (abi),
         "--python-libdir=/opt/python/%s/lib" % (abi),
         common_flags,
@@ -80,6 +102,7 @@ def get_test_command(abi, whl_filename):
 
     return [
         "docker", "run", "--rm=true",
+        docker_platform_flags,
         #"-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
@@ -95,8 +118,9 @@ def get_test_command(abi, whl_filename):
 
 # The command to set up the Docker image.
 setup_cmd = [
-    "docker", "build", "-t",
-    Property("platform"),
+    "docker", "build",
+    docker_platform_flags,
+    "-t", Property("platform"),
     "docker/"
 ]
 
@@ -111,16 +135,21 @@ build_steps = [
     # Steps to figure out which .whl version to use.
     ] + whl_version_steps + [
 
+    # Patch a bug in 1.10.11 for aarch64
+    ShellCommand(command=["sed", "-i", Interpolate("s/PLATFORM = 'manylinux[0-9_]\+-i686'/PLATFORM = '%(prop:platform)s'/"), "makepanda/makepanda.py"]),
+
     # Download and run the script to set up manylinux.
-    FileDownload(mastersrc="build_scripts/prepare_manylinux.sh", workerdest="prepare_manylinux.sh", workdir="."),
-    ShellCommand(name="prepare", command=["bash", "prepare_manylinux.sh", Property("platform")], workdir=".", haltOnFailure=True),
+    # Only necessary for manylinux1 and manylinux2010.
+    FileDownload(mastersrc="build_scripts/prepare_manylinux.sh", workerdest="prepare_manylinux.sh", workdir=".", doStepIf=is_manylinux1_or_manylinux2010()),
+    ShellCommand(name="prepare", command=["bash", "prepare_manylinux.sh", Property("platform")], workdir=".", haltOnFailure=True, doStepIf=is_manylinux1_or_manylinux2010()),
 
     # Download the Dockerfile for this distribution.
     FileDownload(mastersrc=Interpolate("dockerfiles/%(prop:platform)s"),
                  workerdest="docker/Dockerfile", workdir="manylinux"),
 
     # Build the Docker image.
-    ShellCommand(name="setup", command=setup_cmd, workdir="manylinux", haltOnFailure=True),
+    ShellCommand(name="setup", command=setup_cmd, workdir="manylinux",
+                 haltOnFailure=True, timeout=60*60*2),
 
     # Delete the built dir, if requested.  Requires running in Docker because the files are
     # owned by the root user (since the docker container runs as root)
