@@ -48,6 +48,24 @@ def docker_platform_flags(props):
 
 
 @renderer
+def docker_build_flags(props):
+    if props["branch"].startswith("release/"):
+        return ["--build-arg", "THIRDPARTY_BRANCH=" + props["branch"]]
+    else:
+        return ["--build-arg", "THIRDPARTY_BRANCH=main"]
+
+
+@renderer
+def docker_tag(props):
+    tag = props["platform"]
+
+    if props["branch"].startswith("release/"):
+        tag += "-" + props["branch"].split("/", 1)[1]
+
+    return tag
+
+
+@renderer
 def makepanda_flags(props):
     if "arch" in props and props["arch"] == "aarch64":
         return ["--no-nvidiacg"]
@@ -82,7 +100,7 @@ def get_build_command(abi):
         "-e", "CXXFLAGS=-Wno-int-in-bool-context -Wno-ignored-attributes",
         "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
         "-e", "PYTHONHASHSEED=0",
-        Property("platform"),
+        docker_tag,
 
         setarch,
         "/opt/python/%s/bin/python" % (abi),
@@ -106,7 +124,7 @@ def get_test_command(abi, whl_filename):
         #"-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
-        Property("platform"),
+        docker_tag,
 
         setarch,
         "/opt/python/%s/bin/python" % (abi),
@@ -119,8 +137,8 @@ def get_test_command(abi, whl_filename):
 # The command to set up the Docker image.
 setup_cmd = [
     "docker", "build",
-    docker_platform_flags,
-    "-t", Property("platform"),
+    docker_platform_flags, docker_build_flags,
+    "-t", docker_tag,
     "docker/"
 ]
 

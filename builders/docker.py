@@ -170,11 +170,29 @@ def docker_platform_flags(props):
         return []
 
 
+@renderer
+def docker_build_flags(props):
+    if props["branch"].startswith("release/"):
+        return ["--build-arg", "THIRDPARTY_BRANCH=" + props["branch"]]
+    else:
+        return ["--build-arg", "THIRDPARTY_BRANCH=main"]
+
+
+@renderer
+def docker_tag(props):
+    tag = props["suite"] + "-" + props["arch"]
+
+    if props["branch"].startswith("release/"):
+        tag += "-" + props["branch"].split("/", 1)[1]
+
+    return tag
+
+
 # The command to set up the Docker image.
 setup_cmd = [
     "docker", "build",
-    docker_platform_flags,
-    "-t", Interpolate("%(prop:suite)s-%(prop:arch)s"),
+    docker_platform_flags, docker_build_flags,
+    "-t", docker_tag,
     "."
 ]
 
@@ -188,7 +206,7 @@ def get_clean_command():
         "-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
-        Interpolate("%(prop:suite)s-%(prop:arch)s"),
+        docker_tag,
 
         "rm", "-rf", common.outputdir, ".pytest_cache",
     ]
@@ -204,7 +222,7 @@ def get_build_command(ver):
         "-e", "CXXFLAGS=-Wno-int-in-bool-context",
         "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
         "-e", "PYTHONHASHSEED=0",
-        Interpolate("%(prop:suite)s-%(prop:arch)s"),
+        docker_tag,
 
         setarch,
         get_python_executable(ver),
@@ -227,7 +245,7 @@ def get_test_command(ver):
         "-w", "/build/",
         "-e", Interpolate("PYTHONPATH=/build/%s", common.outputdir),
         "-e", Interpolate("LD_LIBRARY_PATH=/build/%s/lib", common.outputdir),
-        Interpolate("%(prop:suite)s-%(prop:arch)s"),
+        docker_tag,
 
         setarch,
         get_python_executable(ver),
@@ -243,7 +261,7 @@ package_cmd = [
     "-w", "/build/",
     "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
     "-e", "PYTHONHASHSEED=0",
-    Interpolate("%(prop:suite)s-%(prop:arch)s"),
+    docker_tag,
 
     setarch,
     "/usr/bin/python3", "makepanda/makepackage.py",
@@ -264,7 +282,7 @@ test_deployng_cmd = [
     "-e", Interpolate("PYTHONPATH=/build/%s", common.outputdir),
     "-e", Interpolate("LD_LIBRARY_PATH=/build/%s/lib", common.outputdir),
     "-e", Interpolate("PATH=/build/%s/bin", common.outputdir),
-    Interpolate("%(prop:suite)s-%(prop:arch)s"),
+    docker_tag,
 
     setarch,
     "/usr/bin/python3", "tests/build_samples.py"

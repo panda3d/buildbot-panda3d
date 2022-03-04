@@ -6,6 +6,9 @@ umask 002
 branch="main"
 if [ "${1%-*}" = "manylinux1" ] || [ "${1%-*}" = "manylinux2010" ]; then
     branch="${1%-*}"
+else
+    # Nothing to do.
+    exit
 fi
 
 # Make sure the manylinux repository is up-to-date.

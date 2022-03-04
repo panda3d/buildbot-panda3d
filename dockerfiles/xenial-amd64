@@ -48,9 +48,10 @@ RUN cd /root && python get-pip-2.7.py && python3 get-pip-3.5.py
 RUN python -m pip install pytest && python3 -m pip install pytest
 
 # Build thirdparty libraries
+ARG THIRDPARTY_BRANCH main
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
-ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/master /root/thirdparty.zip
-RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-master thirdparty
+ADD https://codeload.github.com/rdb/panda3d-thirdparty/zip/$THIRDPARTY_BRANCH /root/thirdparty.zip
+RUN cd /root && unzip thirdparty.zip && mv panda3d-thirdparty-$(echo -n $THIRDPARTY_BRANCH | tr / -) thirdparty
 RUN export SOURCE_DATE_EPOCH=$(stat -c %Y /root/thirdparty/CMakeLists.txt); \
     mkdir /root/thirdparty/build; \
     cd /root/thirdparty/build; \
