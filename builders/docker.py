@@ -154,10 +154,7 @@ def has_additional_py310(step):
 def get_python_executable(ver):
     "Determines the location of python."
 
-    if str(ver) == "2":
-        return "/usr/bin/python"
-    else:
-        return "/usr/bin/python" + str(ver)
+    return "/usr/bin/python" + str(ver)
 
 cloudimg_cmd = Interpolate("wget -N https://partner-images.canonical.com/core/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz || wget -N https://partner-images.canonical.com/core/unsupported/%(prop:suite)s/current/ubuntu-%(prop:suite)s-core-cloudimg-%(prop:arch)s-root.tar.gz")
 
