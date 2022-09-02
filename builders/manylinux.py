@@ -38,6 +38,9 @@ def is_manylinux1_or_manylinux2010():
 def is_not_manylinux1():
     return lambda step: not step.getProperty("platform", "").startswith("manylinux1")
 
+def is_manylinux2014():
+    return lambda step: step.getProperty("platform", "").startswith("manylinux2014")
+
 
 @renderer
 def docker_platform_flags(props):
@@ -175,14 +178,16 @@ build_steps = [
                  haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
 ]
 
-for abi in ('cp310-cp310', 'cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
+for abi in ('cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename = common.get_whl_filename(abi)
 
     do_step = True
     if abi in ('cp27-cp27mu', 'cp34-cp34m', 'cp35-cp35m'):
         do_step = is_branch_and_manylinux1('release/1.10.x')
-    elif abi.startswith('cp31'):
+    elif abi == 'cp310-cp310':
         do_step = is_not_manylinux1()
+    elif abi.startswith('cp31'):
+        do_step = is_manylinux2014()
 
     build_steps += [
         # Invoke makepanda and makewheel.
