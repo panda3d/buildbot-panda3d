@@ -7,7 +7,7 @@ from buildbot.worker import Worker
 distributor = "cmu"
 
 # URL where the source code is hosted.
-git_url = "git://github.com/panda3d/panda3d.git"
+git_url = "https://github.com/panda3d/panda3d.git"
 
 # Link to the Panda3D project.
 title_url = "https://www.panda3d.org/"
