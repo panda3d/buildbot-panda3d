@@ -30,3 +30,6 @@ RUN yum -y install gtk2-devel mesa-libEGL-devel mesa-libGLES-devel
 
 # Extract static Python libraries we'll need for deploy-stub
 RUN tar -C /opt/_internal -xvf /opt/_internal/static-libs-for-embedding-only.tar.xz
+
+# Downgrade patchelf due to pypa/manylinux#1421
+RUN pipx install --force 'patchelf<0.17'
