@@ -84,7 +84,7 @@ def get_build_step(abi):
     ]
 
     do_step = True
-    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
         do_step = is_branch('release/1.10.x')
 
     # Run makepanda - give it enough timeout (1h)
@@ -106,7 +106,7 @@ def get_test_step(abi):
     ]
 
     do_step = True
-    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
         do_step = is_branch('release/1.10.x')
 
     test = Test(name='test '+abi, command=command,
@@ -126,7 +126,7 @@ def get_makewheel_step(abi, arch):
     ]
 
     do_step = True
-    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
         do_step = is_branch('release/1.10.x')
 
     return ShellCommand(name="makewheel " + arch + " " + abi,
@@ -139,7 +139,7 @@ def get_makewheel_step(abi, arch):
 
 def get_upload_step(abi, arch, file):
     do_step = True
-    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
         do_step = is_branch('release/1.10.x')
 
     return FileUpload(

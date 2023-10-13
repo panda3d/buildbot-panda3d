@@ -168,7 +168,7 @@ for abi in ('cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m'
     copy_python = (abi == 'cp37-cp37m')
 
     do_step = True
-    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+    if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
         do_step = is_branch('release/1.10.x')
 
     build_steps += [

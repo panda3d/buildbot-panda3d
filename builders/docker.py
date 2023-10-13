@@ -146,7 +146,7 @@ def setarch(props):
         return []
 
 def has_additional_py37(step):
-    return step.getProperty("suite") == "bionic"
+    return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") == "bionic"
 
 def has_additional_py310(step):
     return step.getProperty("suite") in ("hirsute", "impish", "jammy")
