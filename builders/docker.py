@@ -324,37 +324,39 @@ build_steps = [
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="context", haltOnFailure=True),
 
-    # Invoke makepanda.
     Compile(name="compile py2",
             command=get_build_command("2"),
             doStepIf=has_py2,
             haltOnFailure=True),
+    Test(name="test py2", command=get_test_command("2"), haltOnFailure=True, doStepIf=has_py2),
+
     Compile(name="compile py3",
             command=get_build_command("3"),
             haltOnFailure=True),
+    Test(name="test py3", command=get_test_command("3"), haltOnFailure=True),
+
     Compile(name="compile py3.7",
             command=get_build_command("3.7"),
             doStepIf=has_additional_py37,
             haltOnFailure=True),
+    Test(name="test py3.7", command=get_test_command("3.7"), haltOnFailure=True, doStepIf=has_additional_py37),
+
     Compile(name="compile py3.10",
             command=get_build_command("3.10"),
             doStepIf=has_additional_py310,
             haltOnFailure=True),
+    Test(name="test py3.10", command=get_test_command("3.10"), haltOnFailure=True, doStepIf=has_additional_py310),
+
     Compile(name="compile py3.11",
             command=get_build_command("3.11"),
             doStepIf=has_additional_py311,
             haltOnFailure=True),
+    Test(name="test py3.11", command=get_test_command("3.11"), haltOnFailure=True, doStepIf=has_additional_py311),
+
     Compile(name="compile py3.12",
             command=get_build_command("3.12"),
             doStepIf=has_additional_py312,
             haltOnFailure=True),
-
-    # Run the test suite.
-    Test(name="test py2", command=get_test_command("2"), haltOnFailure=True, doStepIf=has_py2),
-    Test(name="test py3", command=get_test_command("3"), haltOnFailure=True),
-    Test(name="test py3.7", command=get_test_command("3.7"), haltOnFailure=True, doStepIf=has_additional_py37),
-    Test(name="test py3.10", command=get_test_command("3.10"), haltOnFailure=True, doStepIf=has_additional_py310),
-    Test(name="test py3.11", command=get_test_command("3.11"), haltOnFailure=True, doStepIf=has_additional_py311),
     Test(name="test py3.12", command=get_test_command("3.12"), haltOnFailure=True, doStepIf=has_additional_py312),
 
     # Build the installer.
