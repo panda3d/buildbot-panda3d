@@ -145,11 +145,20 @@ def setarch(props):
     else:
         return []
 
+def has_py2(step):
+    return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") not in ("lunar", "mantic")
+
 def has_additional_py37(step):
     return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") == "bionic"
 
 def has_additional_py310(step):
-    return step.getProperty("suite") in ("hirsute", "impish", "jammy")
+    return step.getProperty("suite") in ("hirsute", "impish")
+
+def has_additional_py311(step):
+    return step.getProperty("suite") in ("jammy", "kinetic")
+
+def has_additional_py312(step):
+    return step.getProperty("suite") == "mantic"
 
 def get_python_executable(ver):
     "Determines the location of python."
@@ -318,8 +327,8 @@ build_steps = [
     # Invoke makepanda.
     Compile(name="compile py2",
             command=get_build_command("2"),
-            haltOnFailure=True,
-            doStepIf=is_branch("release/1.10.x")),
+            doStepIf=has_py2,
+            haltOnFailure=True),
     Compile(name="compile py3",
             command=get_build_command("3"),
             haltOnFailure=True),
@@ -331,12 +340,22 @@ build_steps = [
             command=get_build_command("3.10"),
             doStepIf=has_additional_py310,
             haltOnFailure=True),
+    Compile(name="compile py3.11",
+            command=get_build_command("3.11"),
+            doStepIf=has_additional_py311,
+            haltOnFailure=True),
+    Compile(name="compile py3.12",
+            command=get_build_command("3.12"),
+            doStepIf=has_additional_py312,
+            haltOnFailure=True),
 
     # Run the test suite.
-    Test(name="test py2", command=get_test_command("2"), haltOnFailure=True, doStepIf=is_branch("release/1.10.x")),
+    Test(name="test py2", command=get_test_command("2"), haltOnFailure=True, doStepIf=has_py2),
     Test(name="test py3", command=get_test_command("3"), haltOnFailure=True),
     Test(name="test py3.7", command=get_test_command("3.7"), haltOnFailure=True, doStepIf=has_additional_py37),
     Test(name="test py3.10", command=get_test_command("3.10"), haltOnFailure=True, doStepIf=has_additional_py310),
+    Test(name="test py3.11", command=get_test_command("3.11"), haltOnFailure=True, doStepIf=has_additional_py311),
+    Test(name="test py3.12", command=get_test_command("3.12"), haltOnFailure=True, doStepIf=has_additional_py312),
 
     # Build the installer.
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
