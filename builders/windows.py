@@ -103,7 +103,23 @@ def outputdir_cp34(props):
     return [dir]
 
 
-def get_build_command(abi, copy_python=False):
+@renderer
+def no_copy_py37_flag(props):
+    if props["branch"] != "release/1.10.x":
+        return ["--no-copy-python"]
+    else:
+        return []
+
+
+@renderer
+def no_copy_py38_flag(props):
+    if props["branch"] == "release/1.10.x":
+        return ["--no-copy-python"]
+    else:
+        return []
+
+
+def get_build_command(abi):
     command = [
         get_python_executable(abi),
         "makepanda\\makepanda.py",
@@ -120,8 +136,13 @@ def get_build_command(abi, copy_python=False):
     else:
         command += ["--outputdir", outputdir]
 
-    if not copy_python:
+    if abi == 'cp37-cp37m':
+        command += [no_copy_py37_flag]
+    elif abi == 'cp38-cp38':
+        command += [no_copy_py38_flag]
+    else:
         command += ["--no-copy-python"]
+
     return command
 
 
@@ -137,7 +158,7 @@ def get_test_command(abi, whl_filename):
 # The command used to create the .exe installer.
 package_cmd = [
     # It doesn't matter what Python version we call this with.
-    get_python_executable("cp37-cp37m"),
+    get_python_executable("cp38-cp38"),
     "makepanda\\makepackage.py",
     "--verbose", "--lzma",
     "--version", Property("version"),
@@ -149,7 +170,7 @@ build_steps = [
 
     # Decode the version number from the dtool/PandaVersion.pp file.
     SetPropertyFromCommand("version", command=[
-        get_python_executable("cp37-cp37m"),
+        get_python_executable("cp38-cp38"),
         "makepanda/getversion.py", buildtype_flag],
         haltOnFailure=True),
 
@@ -165,7 +186,6 @@ build_steps += whl_version_steps
 
 for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
     whl_filename = get_whl_filename(abi)
-    copy_python = (abi == 'cp37-cp37m')
 
     do_step = True
     if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
@@ -174,7 +194,7 @@ for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38
     build_steps += [
         # Run makepanda. Give it enough timeout (6h) since some steps take ages
         Compile(name="compile "+abi, timeout=6*60*60,
-                command=get_build_command(abi, copy_python=copy_python),
+                command=get_build_command(abi),
                 env={"MAKEPANDA_THIRDPARTY": "C:\\thirdparty",
                      "MAKEPANDA_SDKS": "C:\\sdks",
                      "SOURCE_DATE_EPOCH": Property("commit-timestamp"),
