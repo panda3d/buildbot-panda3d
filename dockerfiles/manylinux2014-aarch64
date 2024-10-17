@@ -5,7 +5,7 @@ FROM quay.io/pypa/manylinux2014_aarch64
 #
 
 # Install some dependencies we'll need later
-RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+RUN yum -y install https://archives.fedoraproject.org/pub/archive/epel/7/aarch64/Packages/e/epel-release-7-12.noarch.rpm && \
     yum -y install wget alsa-lib-devel flex yasm
 
 # libpulse headers
