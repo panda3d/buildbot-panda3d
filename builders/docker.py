@@ -146,7 +146,7 @@ def setarch(props):
         return []
 
 def has_py2(step):
-    return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") not in ("lunar", "mantic")
+    return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") not in ("lunar", "mantic", "noble", "oracular")
 
 def has_additional_py37(step):
     return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") == "bionic"
@@ -159,6 +159,12 @@ def has_additional_py311(step):
 
 def has_additional_py312(step):
     return step.getProperty("suite") == "mantic"
+
+def has_additional_py313(step):
+    return step.getProperty("suite") == "oracular"
+
+def has_cloudimg(step):
+    return step.getProperty("suite") in ("xenial", "bionic")
 
 def get_python_executable(ver):
     "Determines the location of python."
@@ -319,7 +325,7 @@ build_steps = [
     FileDownload(mastersrc=Interpolate("dockerfiles/%(prop:suite)s-%(prop:arch)s"), workerdest="Dockerfile", workdir="context"),
 
     # Make sure the base distribution is up-to-date.
-    ShellCommand(command=cloudimg_cmd, workdir="context"),
+    ShellCommand(command=cloudimg_cmd, workdir="context", doStepIf=has_cloudimg),
 
     # Build the Docker image.
     ShellCommand(name="setup", command=setup_cmd, workdir="context", haltOnFailure=True),
@@ -358,6 +364,12 @@ build_steps = [
             doStepIf=has_additional_py312,
             haltOnFailure=True),
     Test(name="test py3.12", command=get_test_command("3.12"), haltOnFailure=True, doStepIf=has_additional_py312),
+
+    Compile(name="compile py3.13",
+            command=get_build_command("3.13"),
+            doStepIf=has_additional_py313,
+            haltOnFailure=True),
+    Test(name="test py3.13", command=get_test_command("3.13"), haltOnFailure=True, doStepIf=has_additional_py313),
 
     # Build the installer.
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
