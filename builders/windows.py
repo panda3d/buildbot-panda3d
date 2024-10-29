@@ -77,6 +77,8 @@ def get_python_executable(abi):
 
     if abi == "cp27-cp27m":
         return Interpolate("C:\\thirdparty\\win-python%s\\python.exe", arch_suffix)
+    elif abi.endswith('-cp313t'):
+        return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python3.13t.exe", abi[2], abi[3:].split('-')[0], arch_suffix)
     else:
         return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python.exe", abi[2], abi[3:].split('-')[0], arch_suffix)
 
@@ -184,7 +186,7 @@ build_steps = [
 
 build_steps += whl_version_steps
 
-for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp313-cp313', 'cp313-cp313t', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
     whl_filename = get_whl_filename(abi)
 
     do_step = True

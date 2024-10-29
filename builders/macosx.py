@@ -71,9 +71,14 @@ def outputdir(props):
     return [dir]
 
 
+def get_python_executable(abi):
+    ver = abi[2] + '.' + abi.split('-')[1][3:].rstrip('m')
+    return "/usr/local/bin/python" + ver
+
+
 def get_build_step(abi):
     command = [
-        "/usr/local/bin/python%s.%s" % (abi[2], abi[3:].split('-')[0]),
+        get_python_executable(abi),
         "makepanda/makepanda.py",
         "--everything",
         "--outputdir", outputdir,
@@ -101,7 +106,7 @@ def get_build_step(abi):
 def get_test_step(abi):
     # Run the test suite.
     command = [
-        "/usr/local/bin/python%s.%s" % (abi[2], abi[3:].split('-')[0]),
+        get_python_executable(abi),
         "-B", "-m", "pytest", "tests",
     ]
 
@@ -117,7 +122,7 @@ def get_test_step(abi):
 
 def get_makewheel_step(abi, arch):
     command = [
-        "/usr/local/bin/python%s.%s" % (abi[2], abi[3:].split('-')[0]),
+        get_python_executable(abi),
         "makepanda/makewheel.py",
         "--outputdir", outputdir,
         "--version", whl_version,
@@ -194,7 +199,7 @@ for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename32, whl_filename64], haltOnFailure=False),
     ]
 
-for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
+for abi in ('cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
     whl_filename64 = get_whl_filename(abi, 'x86_64')
 
     build_steps_10_9 += [
@@ -205,7 +210,7 @@ for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename64], haltOnFailure=False),
     ]
 
-for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38'):
+for abi in ('cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38'):
     whl_filename = get_whl_filename(abi, 'universal2')
 
     build_steps_11_0 += [
