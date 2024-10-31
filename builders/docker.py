@@ -372,7 +372,7 @@ build_steps = [
     Test(name="test py3.13", command=get_test_command("3.13"), haltOnFailure=True, doStepIf=has_additional_py313),
 
     # Build the installer.
-    ShellCommand(name="package", command=package_cmd, haltOnFailure=True,
+    ShellCommand(name="package", command=package_cmd, haltOnFailure=True, timeout=60*60*2,
                  doStepIf=lambda step:not step.getProperty("optimize", False)),
 
     # And the test scripts for deploy-ng.
