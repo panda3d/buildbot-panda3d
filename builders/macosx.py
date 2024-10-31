@@ -48,16 +48,10 @@ def universal_flag(props):
         return []
 
 
-@renderer
-def platform_prefix(props):
-    osxver = props["osxtarget"]
-    return "macosx_" + osxver.replace('.', '_')
-
-
-def get_whl_filename(abi, arch):
+def get_whl_filename(abi, platform):
     "Determines the name of a .whl file for uploading."
 
-    return Interpolate("panda3d-%s-%s-%s_%s.whl", whl_version, abi, platform_prefix, arch)
+    return Interpolate("panda3d-%s-%s-%s.whl", whl_version, abi, platform.replace('.', '_').replace('-', '_'))
 
 
 @renderer
@@ -120,13 +114,13 @@ def get_test_step(abi):
     return test
 
 
-def get_makewheel_step(abi, arch):
+def get_makewheel_step(abi, platform):
     command = [
         get_python_executable(abi),
         "makepanda/makewheel.py",
         "--outputdir", outputdir,
         "--version", whl_version,
-        "--platform", Interpolate("macosx-%s-%s", Property("osxtarget"), arch),
+        "--platform", platform,
         "--verbose",
     ]
 
@@ -134,7 +128,7 @@ def get_makewheel_step(abi, arch):
     if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
         do_step = is_branch('release/1.10.x')
 
-    return ShellCommand(name="makewheel " + arch + " " + abi,
+    return ShellCommand(name="makewheel " + platform + " " + abi,
                         command=command,
                         env={"SOURCE_DATE_EPOCH": Property("commit-timestamp"),
                              "PYTHONHASHSEED": "0",
@@ -142,13 +136,13 @@ def get_makewheel_step(abi, arch):
                         haltOnFailure=True, doStepIf=do_step)
 
 
-def get_upload_step(abi, arch, file):
+def get_upload_step(abi, platform, file):
     do_step = True
     if abi in ('cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m', 'cp36-cp36m', 'cp37-cp37m'):
         do_step = is_branch('release/1.10.x')
 
     return FileUpload(
-        name="upload " + arch + " " + abi, workersrc=file,
+        name="upload " + platform + " " + abi, workersrc=file,
         masterdest=Interpolate("%s/%s", common.upload_dir, file),
         mode=0o664, haltOnFailure=True, doStepIf=do_step)
 
@@ -181,8 +175,8 @@ build_steps_10_9 = build_steps[:]
 build_steps_11_0 = build_steps[:]
 
 for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'):
-    whl_filename32 = get_whl_filename(abi, 'i386')
-    whl_filename64 = get_whl_filename(abi, 'x86_64')
+    whl_filename32 = get_whl_filename(abi, 'macosx-10.6-i386')
+    whl_filename64 = get_whl_filename(abi, 'macosx-10.6-x86_64')
 
     build_steps_10_6 += [
         get_build_step(abi),
@@ -190,34 +184,39 @@ for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'
 
         # Build two wheels: one for 32-bit, the other for 64-bit.
         # makewheel is clever enough to use "lipo" to extract the right arch.
-        get_makewheel_step(abi, 'i386'),
-        get_makewheel_step(abi, 'x86_64'),
-        get_upload_step(abi, 'i386', whl_filename32),
-        get_upload_step(abi, 'x86_64', whl_filename64),
+        get_makewheel_step(abi, 'macosx-10.6-i386'),
+        get_makewheel_step(abi, 'macosx-10.6-x86_64'),
+        get_upload_step(abi, 'macosx-10.6-i386', whl_filename32),
+        get_upload_step(abi, 'macosx-10.6-x86_64', whl_filename64),
 
         # Now delete them.
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename32, whl_filename64], haltOnFailure=False),
     ]
 
 for abi in ('cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
-    whl_filename64 = get_whl_filename(abi, 'x86_64')
+    if '313' in abi:
+        platform = 'macosx-10.13-x86_64'
+    else:
+        platform = 'macosx-10.9-x86_64'
+    whl_filename64 = get_whl_filename(abi, platform)
 
     build_steps_10_9 += [
         get_build_step(abi),
         get_test_step(abi),
-        get_makewheel_step(abi, 'x86_64'),
-        get_upload_step(abi, 'x86_64', whl_filename64),
+        get_makewheel_step(abi, platform),
+        get_upload_step(abi, platform, whl_filename64),
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename64], haltOnFailure=False),
     ]
 
 for abi in ('cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38'):
-    whl_filename = get_whl_filename(abi, 'universal2')
+    platform = 'macosx-11.0-universal2'
+    whl_filename = get_whl_filename(abi, platform)
 
     build_steps_11_0 += [
         get_build_step(abi),
         get_test_step(abi),
-        get_makewheel_step(abi, 'universal2'),
-        get_upload_step(abi, 'universal2', whl_filename),
+        get_makewheel_step(abi, platform),
+        get_upload_step(abi, platform, whl_filename),
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename], haltOnFailure=False),
     ]
 
