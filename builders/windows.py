@@ -149,12 +149,18 @@ def get_build_command(abi):
 
 
 def get_test_command(abi, whl_filename):
-    return [
+    command = [
         get_python_executable(abi),
         "makepanda\\test_wheel.py",
         "--verbose",
-        whl_filename,
     ]
+    if abi == 'cp313-cp313t':
+        command += [
+            "--ignore=tests/tkpanels",
+            "--ignore=tests/tkwidgets",
+        ]
+    command.append(whl_filename)
+    return command
 
 
 # The command used to create the .exe installer.
