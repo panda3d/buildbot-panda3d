@@ -22,6 +22,14 @@ def arch_suffix(props):
         return ""
 
 
+@renderer
+def pdb_archive_ext(props):
+    if props["branch"] == "release/1.10.x":
+        return "zip"
+    else:
+        return "7z"
+
+
 def get_exe_filename(abi=None):
     "Determines the name of an .exe file for uploading."
 
@@ -39,7 +47,7 @@ def get_pdb_filename(abi=None):
     if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3:].split('-')[0])
 
-    return Interpolate("Panda3D-%s%s%s-pdb.zip", Property("version"), suffix, arch_suffix)
+    return Interpolate("Panda3D-%s%s%s-pdb.%s", Property("version"), suffix, arch_suffix, pdb_archive_ext)
 
 
 @renderer
@@ -68,8 +76,8 @@ def get_pdb_upload_filename(abi=None):
     if abi and not abi.startswith('cp27-'):
         suffix = "-py%s.%s" % (abi[2], abi[3:].split('-')[0])
 
-    return Interpolate("%s/Panda3D-SDK-%s%s%s-pdb.zip",
-        common.upload_dir, exe_version, suffix, arch_suffix)
+    return Interpolate("%s/Panda3D-SDK-%s%s%s-pdb.%s",
+        common.upload_dir, exe_version, suffix, arch_suffix, pdb_archive_ext)
 
 
 def get_python_executable(abi):
