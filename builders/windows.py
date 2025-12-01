@@ -85,8 +85,10 @@ def get_python_executable(abi):
 
     if abi == "cp27-cp27m":
         return Interpolate("C:\\thirdparty\\win-python%s\\python.exe", arch_suffix)
-    elif abi.endswith('-cp313t'):
-        return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python3.13t.exe", abi[2], abi[3:].split('-')[0], arch_suffix)
+    elif abi.endswith('t'):
+        ver = abi.split('-')[-1].lstrip('cp')
+        ver = ver[0] + '.' + ver[1:]
+        return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python%s.exe", abi[2], abi[3:].split('-')[0], arch_suffix, ver)
     else:
         return Interpolate("C:\\thirdparty\\win-python%s.%s%s\\python.exe", abi[2], abi[3:].split('-')[0], arch_suffix)
 
