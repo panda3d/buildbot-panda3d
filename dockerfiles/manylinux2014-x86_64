@@ -14,6 +14,9 @@ RUN curl -O https://freedesktop.org/software/pulseaudio/releases/pulseaudio-9.0.
     cp -r pulseaudio-9.0/src/pulse/*.h /usr/local/include/pulse/ && \
     touch /usr/lib64/libpulse.so
 
+# Downgrade CMake
+RUN pipx install --force 'cmake<4.0'
+
 # Build thirdparty libraries
 ARG THIRDPARTY_BRANCH main
 ENV MAKEPANDA_THIRDPARTY /root/thirdparty
