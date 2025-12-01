@@ -193,8 +193,10 @@ for abi in ('cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m', 'cp34-cp34m'
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename32, whl_filename64], haltOnFailure=False),
     ]
 
-for abi in ('cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
-    if '313' in abi:
+for abi in ('cp314-cp314t', 'cp314-cp314', 'cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp35-cp35m'):
+    if '314' in abi:
+        platform = 'macosx-10.15-x86_64'
+    elif '313' in abi:
         platform = 'macosx-10.13-x86_64'
     else:
         platform = 'macosx-10.9-x86_64'
@@ -208,7 +210,7 @@ for abi in ('cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-
         ShellCommand(name="rm "+abi, command=['rm', '-f', whl_filename64], haltOnFailure=False),
     ]
 
-for abi in ('cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38'):
+for abi in ('cp314-cp314t', 'cp314-cp314', 'cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38'):
     platform = 'macosx-11.0-universal2'
     whl_filename = get_whl_filename(abi, platform)
 
