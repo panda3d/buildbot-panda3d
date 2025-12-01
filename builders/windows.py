@@ -202,7 +202,7 @@ build_steps = [
 
 build_steps += whl_version_steps
 
-for abi in ('cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp313-cp313', 'cp313-cp313t', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
+for abi in ('cp314-cp314', 'cp314-cp314t', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp38-cp38', 'cp313-cp313', 'cp313-cp313t', 'cp37-cp37m', 'cp36-cp36m', 'cp27-cp27m', 'cp34-cp34m', 'cp35-cp35m'):
     whl_filename = get_whl_filename(abi)
 
     do_step = True
