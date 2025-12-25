@@ -146,7 +146,7 @@ def setarch(props):
         return []
 
 def has_py2(step):
-    return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") not in ("lunar", "mantic", "noble", "oracular")
+    return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") not in ("lunar", "mantic", "noble", "oracular", "plucky", "questing")
 
 def has_additional_py37(step):
     return step.getProperty("branch") == "release/1.10.x" and step.getProperty("suite") == "bionic"
@@ -162,6 +162,9 @@ def has_additional_py312(step):
 
 def has_additional_py313(step):
     return step.getProperty("suite") == "oracular"
+
+def has_additional_py314(step):
+    return step.getProperty("suite") == "questing"
 
 def has_cloudimg(step):
     return step.getProperty("suite") in ("xenial", "bionic")
@@ -370,6 +373,12 @@ build_steps = [
             doStepIf=has_additional_py313,
             haltOnFailure=True),
     Test(name="test py3.13", command=get_test_command("3.13"), haltOnFailure=True, doStepIf=has_additional_py313),
+
+    Compile(name="compile py3.14",
+            command=get_build_command("3.14"),
+            doStepIf=has_additional_py314,
+            haltOnFailure=True),
+    Test(name="test py3.14", command=get_test_command("3.14"), haltOnFailure=True, doStepIf=has_additional_py314),
 
     # Build the installer.
     ShellCommand(name="package", command=package_cmd, haltOnFailure=True, timeout=60*60*2,
