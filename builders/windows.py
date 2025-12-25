@@ -131,6 +131,14 @@ def no_copy_py38_flag(props):
         return []
 
 
+@renderer
+def msvc_version_flags(props):
+    if props["branch"] == "release/1.10.x":
+        return []
+    else:
+        return ["--msvc-version", "14.3"]
+
+
 def get_build_command(abi):
     command = [
         get_python_executable(abi),
@@ -140,6 +148,7 @@ def get_build_command(abi):
         "--no-touchinput",
         common_flags,
         "--arch", Property("arch"),
+        msvc_version_flags,
         "--version", whl_version,
         "--wheel",
     ]
