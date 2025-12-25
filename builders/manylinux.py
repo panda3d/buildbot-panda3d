@@ -30,6 +30,9 @@ def is_branch_and_manylinux1(branch):
     return lambda step: (step.getProperty("branch") == branch and \
                          step.getProperty("platform", "").startswith("manylinux1"))
 
+def is_branch_and_not_manylinux2014(branch):
+    return lambda step: (step.getProperty("branch") == branch and \
+                         not step.getProperty("platform", "").startswith("manylinux2014"))
 
 def is_manylinux1_or_manylinux2010():
     return lambda step: (step.getProperty("platform", "").startswith("manylinux1") or \
@@ -185,7 +188,7 @@ for abi in ('cp314-cp314t', 'cp314-cp314', 'cp313-cp313t', 'cp313-cp313', 'cp312
     if abi in ('cp27-cp27mu', 'cp34-cp34m', 'cp35-cp35m'):
         do_step = is_branch_and_manylinux1('release/1.10.x')
     elif abi in ('cp36-cp36m', 'cp37-cp37m'):
-        do_step = is_branch('release/1.10.x')
+        do_step = is_branch_and_not_manylinux2014('release/1.10.x')
     elif abi == 'cp310-cp310':
         do_step = is_not_manylinux1()
     elif abi.startswith('cp31'):
