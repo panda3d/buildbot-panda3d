@@ -9,6 +9,7 @@ from buildbot.process.factory import BuildFactory
 from buildbot.steps.source.git import Git
 from buildbot.steps.shell import Compile, Test, SetPropertyFromCommand, ShellCommand
 from buildbot.steps.transfer import FileDownload, FileUpload
+from buildbot.steps.master import MasterShellCommand
 from buildbot.config import BuilderConfig
 
 import config
@@ -103,7 +104,8 @@ def get_build_command(abi):
         #"-i", Interpolate("--name=%(prop:buildername)s"),
         "-v", Interpolate("%(prop:builddir)s/build/:/build/:rw"),
         "-w", "/build/",
-        "-e", "CXXFLAGS=-Wno-int-in-bool-context -Wno-ignored-attributes",
+        "-e", "CXXFLAGS=-g -Wno-int-in-bool-context -Wno-ignored-attributes",
+        "-e", "CFLAGS=-g",
         "-e", Interpolate("SOURCE_DATE_EPOCH=%(prop:commit-timestamp)s"),
         "-e", "PYTHONHASHSEED=0",
         docker_tag,
@@ -181,8 +183,11 @@ build_steps = [
                  haltOnFailure=False, doStepIf=lambda step:step.getProperty("clean", False)),
 ]
 
+whl_filenames = []
+
 for abi in ('cp314-cp314t', 'cp314-cp314', 'cp313-cp313t', 'cp313-cp313', 'cp312-cp312', 'cp311-cp311', 'cp310-cp310', 'cp39-cp39', 'cp37-cp37m', 'cp38-cp38', 'cp36-cp36m', 'cp27-cp27mu', 'cp35-cp35m', 'cp34-cp34m'):
     whl_filename = common.get_whl_filename(abi)
+    whl_filenames.append(whl_filename)
 
     do_step = True
     if abi in ('cp27-cp27mu', 'cp34-cp34m', 'cp35-cp35m'):
@@ -207,11 +212,35 @@ for abi in ('cp314-cp314t', 'cp314-cp314', 'cp313-cp313t', 'cp313-cp313', 'cp312
         FileUpload(name="upload "+abi, workersrc=whl_filename,
                    masterdest=Interpolate("%s/%s", common.upload_dir, whl_filename),
                    mode=0o664, haltOnFailure=True, doStepIf=do_step),
-
-        # Now delete it.
-        ShellCommand(name="rm "+abi, command=['rm', whl_filename],
-                     haltOnFailure=False, doStepIf=do_step),
     ]
+
+# Time to generate and upload the debug info.
+debuginfo_filename = Interpolate(config.temp_dir + "/debuginfo-%(prop:got_revision)s-%(prop:buildername)s-%(prop:buildnumber)s.zip")
+
+build_steps += [
+    FileDownload(mastersrc="build_scripts/extract_debuginfo.py", workerdest="extract_debuginfo.py"),
+
+    ShellCommand(name="extract debuginfo",
+                 command=["python3", "extract_debuginfo.py", common.outputdir, Property("got_revision")] + whl_filenames,
+                 haltOnFailure=True),
+
+    # Delete the wheels, which we no longer need.
+    ShellCommand(name="cleanup wheels", command=['rm', '-f'] + whl_filenames,
+                 haltOnFailure=False, alwaysRun=True),
+
+    FileUpload(name="upload debuginfo",
+               workersrc="debuginfo.zip",
+               masterdest=debuginfo_filename,
+               mode=0o664, haltOnFailure=True),
+
+    MasterShellCommand(name="install debuginfo",
+                       command=["unzip", "-o", debuginfo_filename, "-d", config.archive_dir],
+                       haltOnFailure=True),
+
+    MasterShellCommand(name="cleanup debuginfo",
+                       command=["rm", "-f", debuginfo_filename],
+                       alwaysRun=True),
+]
 
 manylinux_factory = BuildFactory()
 for step in build_steps:

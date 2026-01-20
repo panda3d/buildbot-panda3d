@@ -33,6 +33,9 @@ runtime_dir = "/srv/www/html/runtime-dev.panda3d.org"
 # Location of a copy of pmerge that can be run on the master.
 pmerge_bin = "/srv/www/html/runtime.panda3d.org/pmerge.p3d"
 
+# Location for temporary files.
+temp_dir = "/tmp/buildbot"
+
 # IRC settings
 irc_host = "irc.freenode.net"
 irc_nick = "p3dbuildbot"
